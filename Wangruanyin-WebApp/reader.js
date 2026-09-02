@@ -110,37 +110,83 @@
       'd.addEventListener("click",h,false);})(document);</scr' + 'ipt>';
   }
 
-  // --- proxy fetching ----------------------------------------------------------
-  const PROXIES = [
-    (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-    (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-    (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+  // --- fetching: parallel multi-source with validation --------------------------
+  // Each source is raced in parallel (first *usable* page wins). Many public
+  // CORS proxies are flaky, so we give each a generous timeout and validate the
+  // result so a Cloudflare error page or a captcha never "wins".
+  const SOURCES = [
+    { name: 'allorigins', kind: 'html', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+    { name: 'allorigins-get', kind: 'json', build: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
+    { name: 'codetabs', kind: 'html', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+    { name: 'corsproxy', kind: 'html', build: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+    { name: 'jina-readable', kind: 'md', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://r.jina.ai/' + u) }
   ];
+  const FETCH_TIMEOUT = 45000;
 
-  function proxyFetch(url) {
-    const queue = PROXIES.slice();
+  function fetchWithTimeout(url, ms) {
     return new Promise((resolve, reject) => {
-      (function next() {
-        if (!queue.length) {
-          reject(new Error('All proxies failed to fetch ' + url));
-          return;
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), ms);
+      fetch(url, { signal: ctl.signal })
+        .then((r) => {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        })
+        .then((txt) => { clearTimeout(t); resolve(txt); })
+        .catch((e) => { clearTimeout(t); reject(e); });
+    });
+  }
+
+  // Reject proxy error pages so a real (if slow) source still wins.
+  function isUsableHtml(html) {
+    if (!html || html.length < 300) return false;
+    if (/<title[^>]*>(Cloudflare|522|502|524|504|Access denied|Just a moment|Attention Required|error[^<]*)/i.test(html)) return false;
+    if (/<body[^>]*class="error-page"/i.test(html)) return false;
+    if (!/<[a-zA-Z][\s>]/.test(html)) return false;
+    return true;
+  }
+
+  function isUsableMd(text) {
+    if (!text || text.length < 40) return false;
+    if (/^(cloudflare|522|502|524|504|error|access denied)/i.test(text.trim())) return false;
+    // A markdown source must not hand us an HTML error/redirect page.
+    if (/<!DOCTYPE|<html|<title>/i.test(text)) return false;
+    return true;
+  }
+
+  // Fetches the page from all sources in parallel and returns the first usable
+  // one: { kind:'html', html } or { kind:'md', text }.
+  function fetchPage(url) {
+    setStatus('Fetching the page from several mirrors…');
+    const tasks = SOURCES.map(async (src) => {
+      let body;
+      try {
+        body = await fetchWithTimeout(src.build(url), FETCH_TIMEOUT);
+      } catch (e) { return null; }
+      try {
+        if (src.kind === 'json') {
+          const parsed = JSON.parse(body);
+          if (parsed && typeof parsed.contents === 'string') body = parsed.contents;
+          else return null;
+          if (!isUsableHtml(body)) return null;
+          return { kind: 'html', html: body, source: src.name };
         }
-        const proxy = queue.shift();
-        setStatus('Fetching via proxy…');
-        const ctl = new AbortController();
-        const guard = setTimeout(() => ctl.abort(), 25000);
-        fetch(proxy(url), { signal: ctl.signal })
-          .then((r) => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.text();
-          })
-          .then((html) => { clearTimeout(guard); resolve(html); })
-          .catch(() => {
-            clearTimeout(guard);
-            setStatus('Proxy failed, trying next…');
-            next();
-          });
-      })();
+        if (src.kind === 'md') {
+          if (!isUsableMd(body)) return null;
+          return { kind: 'md', text: body, source: src.name };
+        }
+        if (!isUsableHtml(body)) return null;
+        return { kind: 'html', html: body, source: src.name };
+      } catch (e) { return null; }
+    });
+    // Real-site HTML is always preferred over the readable-text fallback:
+    // prefer any usable raw-html result, and only then fall back to markdown.
+    return Promise.all(tasks).then((results) => {
+      const html = results.find((r) => r && r.kind === 'html');
+      if (html) return html;
+      const md = results.find((r) => r && r.kind === 'md');
+      if (md) return md;
+      throw new Error('No source returned a usable copy of ' + url);
     });
   }
 
@@ -188,9 +234,67 @@
     return doc;
   }
 
+  // Minimal, safe markdown → HTML for the readable-render fallback (jina).
+  function mdToHtml(text) {
+    const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const blocks = esc.split(/\n\s*\n/).map((b) => b.replace(/^\s+|\s+$/g, ''));
+    const out = [];
+    for (const b of blocks) {
+      if (!b) continue;
+      const h = b.match(/^(#{1,6})\s+(.*)$/);
+      if (h) {
+        const lv = h[1].length;
+        out.push('<h' + lv + '>' + h[2] + '</h' + lv + '>');
+        continue;
+      }
+      if (/^[-*]\s+/.test(b)) {
+        const items = b.split('\n').map((l) => l.replace(/^[-*]\s+/, '')).filter((l) => l);
+        out.push('<ul><li>' + items.join('</li><li>') + '</li></ul>');
+        continue;
+      }
+      if (/^>\s?/.test(b)) {
+        out.push('<blockquote>' + b.replace(/^>\s?/gm, '').replace(/\n/g, '<br>') + '</blockquote>');
+        continue;
+      }
+      out.push('<p>' + b.replace(/\n/g, '<br>') + '</p>');
+    }
+    return out.join('\n');
+  }
+
+  // Builds a styled, safe article document from the readable-text fallback.
+  function buildArticleDoc(text, url, settings, bases) {
+    const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    const title = (text.trim().split('\n')[0] || 'Article').slice(0, 120).replace(/[#\s]+/g, ' ').trim();
+    const html =
+      '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      '<title>' + title + '</title>' +
+      '<style>' +
+      'body{font-family:Georgia,serif;max-width:840px;margin:20px auto;padding:0 20px 60px;line-height:1.75;color:#222;}' +
+      '.wry-src{font-family:Arial,sans-serif;font-size:13px;color:#666;background:#f3f5f7;border:1px solid #dfe4ea;' +
+      'border-radius:8px;padding:8px 12px;margin:0 0 18px;}' +
+      '.wry-src a{color:#1f5fa6;}' +
+      'h1{font-size:26px;line-height:1.3;} h2{font-size:20px;} h3{font-size:17px;}' +
+      'p{font-size:17px;} blockquote{color:#444;border-left:3px solid #bbb;padding-left:12px;margin:14px 0;}' +
+      'pre{background:#f6f8fa;padding:10px;border-radius:6px;overflow:auto;}' +
+      'code{background:#f1f3f5;padding:1px 4px;border-radius:4px;}' +
+      '</style></head><body>' +
+      '<div class="wry-src">Readable render of <a href="' + safeUrl + '" target="_blank" rel="noopener">' + safeUrl + '</a>' +
+      ' — click <strong>↗ Real site</strong> above for the original layout.</div>' +
+      mdToHtml(text) +
+      engineBootstrap(settings, bases) + navHook() +
+      '</body></html>';
+    return html;
+  }
+
   function loaderFail(url) {
     setStatus('');
     showError(url);
+  }
+
+  function renderInFrame(doc) {
+    const blobUrl = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+    frame.src = blobUrl;
+    clearError();
   }
 
   function loadSite(rawUrl) {
@@ -207,16 +311,17 @@
     const settings = runnerSettings(readSettings());
     const bases = candidateBases();
 
-    proxyFetch(url)
-      .then((html) => {
-        const doc = buildDocHtml(html, url, settings, bases);
-        const blobUrl = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+    fetchPage(url)
+      .then((res) => {
+        const doc = res.kind === 'md'
+          ? buildArticleDoc(res.text, url, settings, bases)
+          : buildDocHtml(res.html, url, settings, bases);
+        renderInFrame(doc);
         frame.onload = () => {
           try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
           setStatus('王软音 applied — use the floating panel on the page.');
         };
-        frame.src = blobUrl;
-        clearError();
+        setStatus('Rendering…');
       })
       .catch((err) => {
         loaderFail(url);

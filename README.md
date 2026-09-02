@@ -51,10 +51,13 @@ there — pinyin, translations and HSK colours appear **automatically**, no extr
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. In the **🌐 Website mode** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open with 王软音**.
-3. A new tab of the app opens the **reader**: the page is fetched and rendered there (server-rendered
-   pages like Wikipedia, news and blogs work best), and the floating **王软音 panel** appears with the
-   full set of toggles — pinyin, sentence translation, translate-selection, language, HSK version +
-   per-level legend, read-aloud and Reset. Your toggles from the index page are used automatically.
+3. A new tab of the app opens the **reader**: it fetches the page from **several mirrors in parallel**
+   (CORS proxies — allorigins, codetabs, corsproxy — plus a readable-text service) and renders it in a
+   sandboxed iframe. The floating **王软音 panel** then appears with the full set of toggles — pinyin,
+   sentence translation, translate-selection, language, HSK version + per-level legend, read-aloud and
+   Reset — so the page reads exactly like it does with the extension. Server-rendered pages (Wikipedia,
+   news, blogs) show the original layout; if the raw HTML can't be fetched, the reader falls back to a
+   clean **readable render** of the same article. Your index toggles are applied automatically.
    The reader's top bar offers Back / address bar / Go / **↗ Real site** / Close, and internal links
    navigate inside the reader.
 

@@ -98,15 +98,17 @@
           hidden aria-label="Website rendered with Wangruanyin annotations"></iframe>
 
   <div id="errorBox" hidden>
-    <h2>Could not load this website into the reader</h2>
-    <p>王软音 could not fetch <code id="errUrl"></code> — the site may be unreachable from the public
-    proxies (e.g. it blocks data-centre IPs, requires login, or uses only client-side rendering).</p>
+    <h2>Could not load this website</h2>
+    <p>王软音 tried several mirrors (CORS proxies and a readable-text service) to fetch
+    <code id="errUrl"></code>, but none returned a usable copy. Causes are usually
+    login-required pages, sites that block public proxies, or apps that render only with
+    client-side JavaScript.</p>
     <p>Options:</p>
     <ul>
       <li>Click <strong>↗ Real site</strong> on the top bar to open the actual website in a new tab, then use the
-        <strong>bookmarklet</strong> from the app's “Advanced — bookmarklet” section.</li>
+        <strong>Advanced bookmarklet</strong> from the app to annotate it there.</li>
       <li>Or go back to the <a class="home-link" id="homeLink" href="index.html">web app</a> and try another
-        address (server-rendered pages — Wikipedia, news, blogs — work best).</li>
+        (server-rendered) address — Wikipedia, news and blogs work well.</li>
     </ul>
   </div>
 
