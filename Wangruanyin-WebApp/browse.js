@@ -33,8 +33,15 @@
 
   // Base URL used to load the scripts. index.html sits at the folder root, so
   // the folder URL is "origin + path without the trailing filename".
+  // Robust for any hosting layout: GitHub Pages project sites serve the app at
+  // a sub-path (e.g. https://solojv.github.io/WangRuanYin/), a custom domain
+  // serves it at the origin root, and a local server serves it at any path.
   function baseUrl() {
-    return (location.origin || '') + location.pathname.replace(/[^/]*$/, '');
+    const origin = location.origin || '';
+    // Keep only the directory part of the path (strip any query/hash and any
+    // trailing filename), and make sure it ends with a slash.
+    const dir = (location.pathname || '/').split(/[?#]/)[0].replace(/[^/]*$/, '');
+    return origin + (dir.charAt(dir.length - 1) === '/' ? dir : dir + '/');
   }
 
   // Reads the current state of the index toggles so they are baked into the

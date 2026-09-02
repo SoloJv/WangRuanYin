@@ -1,0 +1,43 @@
+# Deploy the Wangruanyin web app to GitHub Pages.
+# The site is served at: https://solojv.github.io/WangRuanYin/
+#
+# To enable: repo Settings → Pages → Source: "GitHub Actions".
+name: Deploy Web App to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Web App
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # The whole Wangruanyin-WebApp folder becomes the site root,
+          # so index.html + engine files are served at the Pages URL.
+          path: Wangruanyin-WebApp
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

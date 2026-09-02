@@ -30,6 +30,8 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 2. Open **`index.html`** in any modern browser (Chrome, Edge, Firefox, Safari). You can double-click it, or serve it with e.g. `python -m http.server` / VS Code **Live Server**.
 3. A sample sentence is pre-loaded. Paste or type your own Chinese text in the left pane — the annotations update live in the right pane.
 
+> **Hosted on GitHub Pages:** this repo ships a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) that deploys the `Wangruanyin-WebApp` folder. After you push to `main`, enable **Settings → Pages → Source: “GitHub Actions”** once and the web app is live at **`https://solojv.github.io/WangRuanYin/`** (see “Hosting on GitHub Pages” below).
+
 ### Operate the web app
 
 - **Pinyin annotations** toggle — show/hide the pinyin under each character.
@@ -44,13 +46,25 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 
 The web app can annotate **other websites** too, without installing an extension. A browser page cannot inject scripts into a separate tab (same-origin policy), so the standard technique is a **bookmarklet** that the index page generates for you:
 
-1. **Serve the app over HTTP** — a `file://` page cannot host scripts for other websites. From the `Wangruanyin-WebApp` folder run `python -m http.server 8000` and open `http://localhost:8000/`. (VS Code Live Server works too.)
+1. **Serve the app over HTTP(S)** — a `file://` page cannot host scripts for other websites. The easiest way is the GitHub Pages build at **`https://solojv.github.io/WangRuanYin/`** (recommended). Locally, from the `Wangruanyin-WebApp` folder run `python -m http.server 8000` and open `http://localhost:8000/` (VS Code Live Server works too).
 2. In the **🌐 Website mode** card: type the website you want to visit (e.g. `https://zh.wikipedia.org`) and click **Open in new tab**.
 3. **Install the bookmarklet once**: drag the green **王软音 · Wangruanyin** link to your bookmarks bar, or click **Copy bookmarklet** and paste it as a new bookmark. The bookmarklet bakes in the current toggles (pinyin, translation, language, HSK) — change them on the index page and the link updates automatically.
 4. In the opened website tab, click the **王软音** bookmark. The engine scripts are injected from your web app server, a small floating **王软音 panel** appears in the corner, and the page gets pinyin, translations and HSK colours applied.
 5. The floating panel gives you the same controls on the page itself: pinyin, sentence translation, translate-selection, language, HSK version + per-level legend, and read-aloud. Click **×** to restore the page.
 
-> Localhost notes: `http://localhost` is treated as a “potentially trustworthy” origin by Chrome and Firefox, so the bookmarklet also works on `https://` websites. If you serve the app from a non-localhost domain you must serve it over **HTTPS** for it to work on `https://` sites (browsers block active mixed content).
+> HTTPS note: the GitHub Pages build is served over **HTTPS**, so the bookmarklet works on any `https://` website directly. If you run a local server instead, `http://localhost` is treated as a “potentially trustworthy” origin by Chrome and Firefox, so it also works on `https://` sites; a non-localhost HTTP server would only work on plain-`http` sites.
+
+### Hosting on GitHub Pages
+
+The repo is set up to publish the web app with GitHub Pages (repo **`SoloJv/WangRuanYin`**):
+
+1. Push the repo to GitHub (branch **`main`**).
+2. Repo **Settings → Pages → Source: “GitHub Actions”** (choose **Deploy from a branch** only if you prefer a manual source; the Actions workflow below is the recommended way).
+3. The included workflow (`.github/workflows/deploy-pages.yml`) runs on every push to `main` (or manually via **Actions → Deploy Web App to GitHub Pages → Run workflow**) and uploads the `Wangruanyin-WebApp` folder as the site.
+4. The web app is then live at **`https://solojv.github.io/WangRuanYin/`** — open it there and use **🌐 Website mode** to annotate any website from that HTTPS address.
+   - A `.nojekyll` file is shipped in the folder so Pages serves the files raw.
+
+> If the repo owner uses a **custom domain**, the app is served at that domain's root instead; `browse.js` computes all script URLs relative to the current page, so it works with any Pages URL (project sub-path or root) without extra configuration.
 
 ### Files you must keep
 
@@ -68,6 +82,7 @@ Wangruanyin-WebApp/
 ├── pinyin-dict-characters.js   (large character→pinyin dictionary — REQUIRED)
 ├── hsk2-char-levels.js         (HSK 2.0 char→level data)
 ├── hsk3-char-levels.js         (HSK 3.0 char→level data)
+├── .nojekyll                   (tells GitHub Pages to serve files raw)
 ├── LICENSE
 └── COMMERCIAL_LICENSE.md
 ```
@@ -143,7 +158,7 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Reload after editing (extension)?** Click the ↻ (reload) on the extension card on the extensions page, then refresh the target web page.
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
-- **Website mode: bookmarklet does nothing?** Make sure the web app is served over HTTP (not `file://`) and the server is still running — the bookmarklet loads its scripts from that server. On `https://` websites the app must be served from `localhost` or over HTTPS (mixed content). Check the browser console on the target page for errors.
+- **Website mode: bookmarklet does nothing?** Make sure the web app is served over HTTP(S) (not `file://`) and the server is still running — the bookmarklet loads its scripts from that server. The GitHub Pages build (`https://solojv.github.io/WangRuanYin/`) works everywhere; a non-localhost local server must be reachable from the website you're viewing (and `http://` servers won't work on `https://` pages — mixed content). Check the browser console on the target page for errors.
 - **Website mode: “Open in new tab” blocked?** Allow pop-ups for the app page, or copy the address and open it yourself, then click the bookmark.
 
 ---
@@ -161,7 +176,8 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 ```
 WRY/
 ├── README.md                  ← this unified guide
-├── Wangruanyin-WebApp/        ← standalone web app
+├── .github/workflows/deploy-pages.yml ← GitHub Pages deployment (web app)
+├── Wangruanyin-WebApp/        ← standalone web app (+ .nojekyll)
 ├── Wangruanyin/               ← Chrome extension source
 ├── Wangruanyin-Edge/          ← Edge extension source
 ├── Wangruanyin-Firefox/       ← Firefox add-on source
@@ -169,4 +185,3 @@ WRY/
 ├── Wangruanyin.zip            ← Chrome/Edge dev-package
 └── Wangruanyin-Edge.zip       ← Edge dev-package
 ```
-8ea30f2b664acc74f78c7fc2bc0569eb6b69cb6b

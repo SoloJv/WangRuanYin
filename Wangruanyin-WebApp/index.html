@@ -117,8 +117,11 @@
     </div>
     <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
     <p id="browseFileWarning" class="browse-warning" hidden>
-      ⚠️ Website mode needs the app to be served over <strong>HTTP</strong> — e.g. open a terminal in the
-      <code>Wangruanyin-WebApp</code> folder and run <code>python -m http.server 8000</code>, then open
+      ⚠️ Website mode needs the app to be served over <strong>HTTP(S)</strong>. The easiest way is to
+      host it on <strong>GitHub Pages</strong> (see the README — the repo already ships a workflow at
+      <code>.github/workflows/deploy-pages.yml</code>), so it runs at
+      <code>https://solojv.github.io/WangRuanYin/</code>. Locally, from the
+      <code>Wangruanyin-WebApp</code> folder run <code>python -m http.server 8000</code> and open
       <code>http://localhost:8000/</code>. A page opened via <code>file://</code> cannot inject scripts into other websites.
     </p>
     <p class="hint">
