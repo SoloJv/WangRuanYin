@@ -1,0 +1,606 @@
+// page-runner.js
+// Wangruanyin website mode — runs INSIDE a third-party page after the
+// bookmarklet generated on the web app index loads the engine scripts.
+// Mirrors the extension's content.js: pinyin annotations, sentence
+// translation, HSK colour coding, selection popup and read-aloud, all
+// operated from a small floating panel injected into the page.
+(() => {
+  'use strict';
+  if (window.__WRY_PAGE_RUNNER__) return;
+  window.__WRY_PAGE_RUNNER__ = true;
+
+  const CHINESE_RE = (window.WryAnnotator && window.WryAnnotator.CHINESE_RE) || /[\u4e00-\u9fff]/;
+  const A = window.WryAnnotator;
+
+  const LANGS = [
+    ['en', 'English'], ['es', 'Spanish'], ['fr', 'French'], ['de', 'German'],
+    ['it', 'Italian'], ['pt', 'Portuguese'], ['ru', 'Russian'], ['ja', 'Japanese'],
+    ['ko', 'Korean'], ['nl', 'Dutch'], ['pl', 'Polish'], ['tr', 'Turkish']
+  ];
+
+  // --- state (mirrors content.js) ---
+  let settings = {
+    pinyin: true, translation: true, selection: false,
+    lang: 'en', hsk: 'off', disabled: [], hskHighlight: false
+  };
+  let isEnabled = true;          // pinyin annotations master
+  let isPageProcessed = false;
+  let selectionEnabled = false;
+  let targetLang = 'en';
+  let hskMode = 'off';
+  let hskDisabledLevels = [];
+  let hskHighlight = false;      // standalone HSK highlight (no translation)
+  let processing = false;
+
+  const transCache = {};
+  let transLang = null;
+
+  function setHskState() {
+    if (A && A.setHskState) A.setHskState(hskMode, hskDisabledLevels);
+  }
+
+  // --- translation ----------------------------------------------------------
+  function getTranslation(text) {
+    const key = targetLang + '|' + text;
+    if (Object.prototype.hasOwnProperty.call(transCache, key)) return Promise.resolve(transCache[key]);
+    return WryTranslator.translate(text, targetLang).then((t) => {
+      transCache[key] = t;
+      return t;
+    }).catch(() => '');
+  }
+
+  // --- text walking & page annotation ----------------------------------------
+  function walkTextNodes(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (CHINESE_RE.test(node.nodeValue)) nodes.push(node);
+    }
+    return nodes;
+  }
+
+  async function processPage() {
+    if (!isEnabled || processing) return;
+    processing = true;
+    try {
+      if (document.querySelector('.wry-hsk-span')) removeStandaloneHsk();
+      const nodes = walkTextNodes(document.body);
+      for (const node of nodes) {
+        const parent = node.parentNode;
+        if (!parent || !parent.contains(node)) continue;
+        const original = node.nodeValue;
+        if (!original || !original.trim()) continue;
+        const sentences = A.splitIntoSentences(original);
+        const outer = document.createDocumentFragment();
+        for (const sentence of sentences) {
+          let translation = '';
+          try { translation = await getTranslation(sentence); } catch (e) {}
+          if (!parent.contains(node)) break;
+          const frag = A.buildSentenceFragment(sentence, translation, {
+            showPinyin: true,
+            showTranslation: settings.translation
+          });
+          outer.appendChild(frag);
+        }
+        if (parent.contains(node)) parent.replaceChild(outer, node);
+      }
+      isPageProcessed = true;
+      setStatus('王软音 applied to this page.');
+    } catch (e) {
+      console.error('Wangruanyin page error:', e);
+    } finally {
+      processing = false;
+    }
+  }
+
+  function removeAnnotations() {
+    stopPageReader(false);
+    document.querySelectorAll('.zh-sentence').forEach((el) => {
+      const parent = el.parentNode;
+      if (!parent) return;
+      const chars = [];
+      el.querySelectorAll('.zh-char').forEach((c) => chars.push(c.textContent));
+      parent.insertBefore(document.createTextNode(chars.join('')), el);
+      parent.removeChild(el);
+    });
+    document.body.normalize();
+    isPageProcessed = false;
+  }
+
+  // Re-annotate after a language / translation / HSK change (mirrors the popup
+  // behaviour: drop the annotations and rebuild with the new options).
+  function rebuildAnnotation() {
+    if (isPageProcessed) removeAnnotations();
+    if (isEnabled) processPage();
+  }
+
+  // --- standalone HSK highlight (colours every character, no translation) ----
+  function applyStandaloneHsk() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const el = node.parentElement;
+        if (el && el.closest && el.closest('.zh-sentence, .wry-hsk-span')) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return CHINESE_RE.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) nodes.push(node);
+
+    for (const n of nodes) {
+      const parent = n.parentNode;
+      if (!parent || !parent.contains(n)) continue;
+      const fragment = document.createDocumentFragment();
+      for (const ch of n.nodeValue) {
+        if (CHINESE_RE.test(ch)) {
+          const hsk = A.getHskLevel(ch);
+          const span = document.createElement('span');
+          span.className = 'wry-hsk-span' + (hsk > 0 ? ' hsk-lv' + hsk : '');
+          if (hsk > 0) span.title = 'HSK ' + hsk;
+          span.textContent = ch;
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(ch));
+        }
+      }
+      if (parent.contains(n)) parent.replaceChild(fragment, n);
+    }
+  }
+// --- selection translation popup -------------------------------------------
+  function onSelectionMouseUp(e) {
+    if (!selectionEnabled) return;
+    if (e.target && e.target.closest && e.target.closest('#wry-translation-popup')) return;
+    window.setTimeout(() => {
+      const selection = window.getSelection();
+      const selectedText = selection ? selection.toString().trim() : '';
+      if (!selectedText || !CHINESE_RE.test(selectedText)) return;
+
+      let position = { x: e.clientX, y: e.clientY + 12 };
+      if (selection && selection.rangeCount > 0) {
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        if (rect.width > 0 || rect.height > 0) {
+          position = { x: rect.left + rect.width / 2, y: rect.bottom + 12 };
+        }
+      }
+      showTranslationPopup(selectedText, position);
+    }, 50);
+  }
+
+  function showTranslationPopup(text, position) {
+    hideTranslationPopup();
+    if (!CHINESE_RE.test(text)) return;
+
+    const pinyinLine = A.buildPinyinLine(text);
+    const speakText = A.chineseOnly(text);
+
+    const popup = document.createElement('div');
+    popup.id = 'wry-translation-popup';
+    popup.innerHTML =
+      '<div class="wry-header">' +
+      '<button type="button" class="wry-tts" title="Pronounce the Chinese text (browser TTS)">🔊 Read aloud</button>' +
+      '<button type="button" class="wry-close" title="Close">&times;</button>' +
+      '</div>' +
+      '<div class="wry-label">Chinese</div>' +
+      '<div class="wry-chinese"></div>' +
+      '<div class="wry-label">Pinyin</div>' +
+      '<div class="wry-pinyin"></div>' +
+      '<div class="wry-label">Translation</div>' +
+      '<div class="wry-translation"></div>';
+
+    popup.querySelector('.wry-chinese').innerHTML = A.buildChineseHtml(text);
+    popup.querySelector('.wry-pinyin').innerHTML = pinyinLine;
+    popup.querySelector('.wry-translation').textContent = '';
+
+    const ttsBtn = popup.querySelector('.wry-tts');
+    ttsBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (ttsSpeaking) {
+        stopTtsForPopup();
+        ttsBtn.textContent = '🔊 Read aloud';
+        ttsBtn.classList.remove('wry-tts-playing');
+        return;
+      }
+      ttsBtn.textContent = '⏹ Stop';
+      ttsBtn.classList.add('wry-tts-playing');
+      speakZhText(speakText).then((ok) => {
+        ttsBtn.textContent = '🔊 Read aloud';
+        ttsBtn.classList.remove('wry-tts-playing');
+      });
+    });
+
+    document.body.appendChild(popup);
+
+    const rect = popup.getBoundingClientRect();
+    let left = Math.max(8, position.x - rect.width / 2);
+    let top = position.y;
+    if (left + rect.width > window.innerWidth - 8) left = window.innerWidth - rect.width - 8;
+    if (top + rect.height > window.innerHeight - 8) top = Math.max(8, position.y - rect.height - 24);
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+
+    popup.querySelector('.wry-close').addEventListener('click', hideTranslationPopup);
+    window.setTimeout(() => {
+      document.addEventListener('click', (ev) => {
+        if (!document.getElementById('wry-translation-popup')) return;
+        if (!ev.target.closest('#wry-translation-popup')) hideTranslationPopup();
+      }, { once: true });
+    }, 0);
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') hideTranslationPopup();
+    }, { once: true });
+
+    getTranslation(text).then((t) => {
+      const live = document.getElementById('wry-translation-popup');
+      if (live) {
+        const el = live.querySelector('.wry-translation');
+        if (el) el.textContent = t || '';
+      }
+    });
+  }
+
+  function hideTranslationPopup() {
+    stopTtsForPopup();
+    const existing = document.getElementById('wry-translation-popup');
+    if (existing) existing.remove();
+  }
+
+  // --- read-aloud (browser Web Speech API, Chinese voice) ---------------------
+  let ttsSpeaking = false;
+  let currentUtterance = null;
+
+  function stopTtsForPopup() {
+    ttsSpeaking = false;
+    if (currentUtterance) { currentUtterance = null; }
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+  }
+
+  function speakZh(text, onBoundary, onEnd) {
+    try {
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+        if (onEnd) onEnd(false);
+        return null;
+      }
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-CN';
+      u.rate = 0.9;
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        const zhVoice = voices.find((v) => /^zh([-_]|$)/i.test(v.lang || ''));
+        if (zhVoice) u.voice = zhVoice;
+      } catch (e2) {}
+      if (onBoundary) u.onboundary = onBoundary;
+      if (onEnd) { u.onend = () => onEnd(true); u.onerror = () => onEnd(false); }
+      window.speechSynthesis.speak(u);
+      return u;
+    } catch (e) {
+      if (onEnd) onEnd(false);
+      return null;
+    }
+  }
+
+  function speakZhText(text) {
+    return new Promise((resolve) => {
+      stopTtsForPopup();
+      ttsSpeaking = true;
+      const u = speakZh(text, null, (ok) => {
+        ttsSpeaking = false;
+        resolve(!!ok);
+      });
+      if (!u) { ttsSpeaking = false; resolve(false); }
+    });
+  }
+
+  function removeStandaloneHsk() {
+    document.querySelectorAll('.wry-hsk-span').forEach((span) => {
+      const parent = span.parentNode;
+      if (!parent) return;
+      parent.insertBefore(document.createTextNode(span.textContent), span);
+      parent.removeChild(span);
+    });
+    document.body.normalize();
+  }
+
+  // --- whole-page read-aloud (reads every annotated sentence) ----------------
+  const pageTts = {
+    active: false, paused: false, gen: 0, items: [], index: 0,
+    timer: null, boundarySeen: false, startTime: 0
+  };
+
+  function collectPageSentences() {
+    pageTts.items = [];
+    document.querySelectorAll('.zh-sentence').forEach((wrapper) => {
+      const blocks = Array.prototype.slice.call(wrapper.querySelectorAll('.zh-char-block'));
+      if (!blocks.length) return;
+      const zh = A.chineseOnly(blocks.map((b) => {
+        const c = b.querySelector('.zh-char');
+        return c ? c.textContent : '';
+      }).join(''));
+      if (zh) pageTts.items.push({ blocks, zh });
+    });
+  }
+
+  function highlightIdx(blocks, idx) {
+    blocks.forEach((b, i) => b.classList.toggle('wry-tts-active', i === idx));
+  }
+  function clearHighlight(blocks) {
+    blocks.forEach((b) => b.classList.remove('wry-tts-active'));
+  }
+
+  function stopPageReader(keepItems) {
+    pageTts.active = false;
+    pageTts.paused = false;
+    pageTts.gen++;
+    if (pageTts.timer) { clearInterval(pageTts.timer); pageTts.timer = null; }
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+    document.querySelectorAll('.zh-char-block.wry-tts-active').forEach((b) => b.classList.remove('wry-tts-active'));
+    if (!keepItems) pageTts.items = [];
+    syncTtsButtons();
+  }
+
+  function readPageSentence(index) {
+    if (!pageTts.active) return;
+    if (index >= pageTts.items.length) {
+      stopPageReader(true);
+      setStatus('Reading finished.');
+      return;
+    }
+    pageTts.index = index;
+    if (pageTts.timer) { clearInterval(pageTts.timer); pageTts.timer = null; }
+    const item = pageTts.items[index];
+    clearHighlight(item.blocks);
+    const gen = ++pageTts.gen;
+    pageTts.boundarySeen = false;
+    pageTts.startTime = Date.now();
+    highlightIdx(item.blocks, 0);
+
+    speakZh(item.zh,
+      (e) => {
+        if (pageTts.gen !== gen || !pageTts.active || pageTts.paused) return;
+        pageTts.boundarySeen = true;
+        const hanzi = (item.zh.substring(0, e.charIndex || 0).match(/[\u4e00-\u9fff]/g) || []).length;
+        highlightIdx(item.blocks, Math.min(item.blocks.length - 1, hanzi));
+      },
+      () => {
+        if (pageTts.gen !== gen || !pageTts.active) return;
+        readPageSentence(index + 1);
+      }
+    );
+
+    // Coarse fallback while the TTS engine doesn't fire boundary events.
+    const estimatedMs = Math.max(1200, item.zh.length * 260);
+    pageTts.timer = setInterval(() => {
+      if (pageTts.gen !== gen || !pageTts.active || pageTts.paused) return;
+      if (pageTts.boundarySeen || !window.speechSynthesis || !window.speechSynthesis.speaking) return;
+      const progress = Math.min(1, (Date.now() - pageTts.startTime) / estimatedMs);
+      highlightIdx(item.blocks, Math.min(item.blocks.length - 1, Math.floor(progress * item.blocks.length)));
+    }, 200);
+  }
+
+  function startPageReader() {
+    stopPageReader(true);
+    collectPageSentences();
+    if (!pageTts.items.length) {
+      setStatus('No annotated sentences to read.');
+      return;
+    }
+    pageTts.active = true;
+    pageTts.paused = false;
+    readPageSentence(0);
+    setStatus('Reading page aloud…');
+  }
+
+  function togglePageReader() {
+    if (pageTts.active && !pageTts.paused) {
+      pageTts.paused = true;
+      try { window.speechSynthesis && window.speechSynthesis.pause(); } catch (e) {}
+    } else if (pageTts.active && pageTts.paused) {
+      pageTts.paused = false;
+      try { window.speechSynthesis && window.speechSynthesis.resume(); } catch (e) {}
+    } else {
+      startPageReader();
+    }
+    syncTtsButtons();
+  }
+
+  function syncTtsButtons() {
+    if (!panel) return;
+    const play = panel.querySelector('#wrypgPlay');
+    const stop = panel.querySelector('#wrypgStop');
+    if (!play) return;
+    const playing = pageTts.active && !pageTts.paused;
+    play.textContent = playing ? '⏸' : '▶';
+    play.title = playing ? 'Pause' : 'Play';
+    stop.disabled = !pageTts.active;
+    play.classList.toggle('playing', playing);
+  }
+
+  // --- floating panel ---------------------------------------------------------
+  let panel = null;
+
+  function setStatus(msg) {
+    if (!panel) return;
+    const s = panel.querySelector('.wry-panel-status');
+    if (s) s.textContent = msg;
+    if (msg) window.setTimeout(() => { if (s && s.textContent === msg) s.textContent = ''; }, 5000);
+  }
+
+  function buildPanel() {
+    if (panel) return panel;
+    const langs = LANGS.map(([v, label]) => '<option value="' + v + '">' + label + '</option>').join('');
+    const legend = Array.from({ length: 9 }, (_, i) => {
+      const lv = i + 1;
+      return '<button type="button" class="hsk-color hsk-lv' + lv + '" data-level="' + lv + '" title="HSK ' + lv + ' — click to toggle">' + lv + '</button>';
+    }).join('');
+
+    panel = document.createElement('div');
+    panel.id = 'wry-page-panel';
+    panel.innerHTML =
+      '<div class="wry-panel-head">' +
+        '<span class="wry-panel-title">王软音 · Wangruanyin</span>' +
+        '<button type="button" class="wry-panel-close" title="Close and restore the page">&times;</button>' +
+      '</div>' +
+      '<label class="wry-panel-row"><span>Pinyin annotations</span><span class="wry-switch"><input type="checkbox" id="wrypgPinyin"><span class="wry-slider"></span></span></label>' +
+      '<label class="wry-panel-row"><span>Sentence translation</span><span class="wry-switch"><input type="checkbox" id="wrypgTrans"><span class="wry-slider"></span></span></label>' +
+      '<label class="wry-panel-row"><span>Translate selection</span><span class="wry-switch"><input type="checkbox" id="wrypgSel"><span class="wry-slider"></span></span></label>' +
+      '<div class="wry-panel-row"><span>Language</span><select id="wrypgLang">' + langs + '</select></div>' +
+      '<div class="wry-panel-row"><span>HSK version</span><span class="wry-panel-hsk" id="wrypgHskWrap">' +
+        '<label><input type="radio" name="wrypgHsk" value="off"><span>Off</span></label>' +
+        '<label><input type="radio" name="wrypgHsk" value="hsk2"><span>2.0</span></label>' +
+        '<label><input type="radio" name="wrypgHsk" value="hsk3"><span>3.0</span></label>' +
+      '</span></div>' +
+      '<div class="wry-panel-legend" id="wrypgLegend">' + legend + '</div>' +
+      '<div class="wry-panel-row"><span>Read page aloud</span><span class="wry-panel-tts">' +
+        '<button type="button" id="wrypgPlay" class="wry-panel-btn">▶</button>' +
+        '<button type="button" id="wrypgStop" class="wry-panel-btn" disabled>⏹</button>' +
+      '</span></div>' +
+      '<div class="wry-panel-status"></div>';
+
+    (document.body || document.documentElement).appendChild(panel);
+    return panel;
+  }
+
+  function byId(id) { return panel ? panel.querySelector('#' + id) : null; }
+
+  function updateLegend() {
+    if (!panel) return;
+    const maxLevel = hskMode === 'hsk3' ? 9 : (hskMode === 'hsk2' ? 6 : 0);
+    panel.querySelectorAll('#wrypgLegend .hsk-color').forEach((sw) => {
+      const lv = parseInt(sw.getAttribute('data-level'), 10);
+      const visible = lv >= 1 && lv <= maxLevel;
+      sw.hidden = !visible;
+      sw.style.display = visible ? '' : 'none';
+      if (visible) sw.classList.toggle('off', hskDisabledLevels.indexOf(lv) !== -1);
+    });
+  }
+
+  function syncPanel() {
+    const pPin = byId('wrypgPinyin');
+    const pTrans = byId('wrypgTrans');
+    const pSel = byId('wrypgSel');
+    const pLang = byId('wrypgLang');
+    if (pPin) pPin.checked = isEnabled;
+    if (pTrans) pTrans.checked = settings.translation !== false;
+    if (pSel) pSel.checked = selectionEnabled;
+    if (pLang) pLang.value = targetLang;
+    const wrap = panel && panel.querySelector('#wrypgHskWrap');
+    if (wrap) {
+      wrap.querySelectorAll('input').forEach((r) => { r.checked = (r.value === hskMode); });
+    }
+    updateLegend();
+    syncTtsButtons();
+  }
+// --- panel wiring ------------------------------------------------------------
+  function wirePanel() {
+    const pPin = byId('wrypgPinyin');
+    const pTrans = byId('wrypgTrans');
+    const pSel = byId('wrypgSel');
+    const pLang = byId('wrypgLang');
+
+    pPin.addEventListener('change', () => {
+      isEnabled = pPin.checked;
+      settings.pinyin = isEnabled;
+      if (!isEnabled) { removeAnnotations(); setStatus('Pinyin annotations off.'); }
+      else { processPage(); }
+    });
+
+    pTrans.addEventListener('change', () => {
+      settings.translation = pTrans.checked;
+      rebuildAnnotation();
+    });
+
+    pSel.addEventListener('change', () => {
+      selectionEnabled = pSel.checked;
+      settings.selection = selectionEnabled;
+      if (selectionEnabled) {
+        document.addEventListener('mouseup', onSelectionMouseUp);
+        setStatus('Translate selection — select Chinese text on the page.');
+      } else {
+        document.removeEventListener('mouseup', onSelectionMouseUp);
+        hideTranslationPopup();
+      }
+    });
+
+    pLang.addEventListener('change', () => {
+      targetLang = pLang.value || 'en';
+      settings.lang = targetLang;
+      transLang = null;
+      for (const k in transCache) delete transCache[k];
+      rebuildAnnotation();
+    });
+
+    panel.querySelectorAll('#wrypgHskWrap input').forEach((r) => {
+      r.addEventListener('change', () => {
+        if (!r.checked) return;
+        hskMode = r.value;
+        settings.hsk = hskMode;
+        setHskState();
+        updateLegend();
+        rebuildAnnotation();
+        if (hskHighlight) { removeStandaloneHsk(); applyStandaloneHsk(); }
+        setStatus({ off: 'HSK colouring Off', hsk2: 'HSK 2.0 colours', hsk3: 'HSK 3.0 colours' }[hskMode] || hskMode);
+      });
+    });
+
+    panel.querySelectorAll('#wrypgLegend .hsk-color').forEach((sw) => {
+      sw.addEventListener('click', () => {
+        const lv = parseInt(sw.getAttribute('data-level'), 10);
+        if (!lv || hskMode === 'off') return;
+        const idx = hskDisabledLevels.indexOf(lv);
+        if (idx === -1) hskDisabledLevels.push(lv); else hskDisabledLevels.splice(idx, 1);
+        hskDisabledLevels.sort((a, b) => a - b);
+        settings.disabled = hskDisabledLevels.slice();
+        setHskState();
+        updateLegend();
+        rebuildAnnotation();
+        if (hskHighlight) { removeStandaloneHsk(); applyStandaloneHsk(); }
+      });
+    });
+
+    byId('wrypgPlay').addEventListener('click', togglePageReader);
+    byId('wrypgStop').addEventListener('click', () => stopPageReader(false));
+
+    panel.querySelector('.wry-panel-close').addEventListener('click', cleanup);
+  }
+
+  // --- init / cleanup / public API ---------------------------------------------
+  function applySettings(s) {
+    if (!s) s = {};
+    settings = Object.assign(settings, s);
+    isEnabled = settings.pinyin !== false;
+    selectionEnabled = settings.selection === true;
+    targetLang = settings.lang || 'en';
+    hskMode = ['off', 'hsk2', 'hsk3'].indexOf(settings.hsk) !== -1 ? settings.hsk : 'off';
+    hskDisabledLevels = Array.isArray(settings.disabled)
+      ? settings.disabled.filter((n) => typeof n === 'number' && n >= 1 && n <= 9)
+      : [];
+    hskHighlight = settings.hskHighlight === true;
+    setHskState();
+  }
+
+  function cleanup() {
+    stopPageReader(false);
+    stopTtsForPopup();
+    hideTranslationPopup();
+    removeAnnotations();
+    removeStandaloneHsk();
+    document.removeEventListener('mouseup', onSelectionMouseUp);
+    if (panel) { panel.remove(); panel = null; }
+  }
+
+  function init(s) {
+    applySettings(s);
+    buildPanel();
+    wirePanel();
+    syncPanel();
+    if (selectionEnabled) document.addEventListener('mouseup', onSelectionMouseUp);
+    if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
+    if (isEnabled) processPage();
+    setStatus('王软音 ready — use the toggles above.');
+  }
+
+  window.WryPageRunner = { init, cleanup, applySettings };
+})();

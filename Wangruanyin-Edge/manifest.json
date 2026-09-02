@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "网软音 - Wangruanyin (Edge)",
+  "description": "Annota la pagina con pinyin e traduzione. Microsoft Edge (Chromium) compatible build.",
+  "version": "0.4.0",
+
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_title": "网软音",
+    "default_popup": "popup.html"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "pinyin-dict-characters.js",
+        "pinyin-data.js",
+        "hsk2-char-levels.js",
+        "hsk3-char-levels.js",
+        "content.js"
+      ],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

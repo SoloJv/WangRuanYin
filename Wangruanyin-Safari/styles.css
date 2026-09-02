@@ -1,0 +1,261 @@
+/* Annotazione pagina compatta */
+.zh-sentence {
+  display: inline-block;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+/* Riga di caratteri + pinyin sotto ogni carattere */
+.zh-chars-line {
+  display: block;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.zh-char-block {
+  display: inline-block;
+  vertical-align: top;
+  text-align: center;
+  margin: 0 1px;
+  line-height: 1.1;
+}
+
+.zh-char {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.zh-pinyin {
+  display: block;
+  font-size: 10px;
+  color: #555;
+  line-height: 1.1;
+}
+
+/* Testo non cinese (spazi/punteggiatura) */
+.zh-pad {
+  display: inline-block;
+  vertical-align: top;
+  line-height: 1.2;
+}
+
+/* UNA traduzione per l'intera frase, su riga separata sotto */
+.zh-translation {
+  display: block;
+  font-size: 11px;
+  color: #0070c0;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+/* Popup traduzione selezione */
+#wry-translation-popup {
+  position: fixed;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  padding: 14px 16px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+#wry-translation-popup .wry-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #888;
+}
+
+#wry-translation-popup .wry-close:hover {
+  color: #333;
+}
+
+#wry-translation-popup .wry-label {
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #999;
+  margin-top: 8px;
+}
+
+#wry-translation-popup .wry-chinese {
+  font-size: 20px;
+  font-weight: bold;
+  color: #111;
+}
+
+#wry-translation-popup .wry-pinyin {
+  font-size: 15px;
+  color: #555;
+}
+
+#wry-translation-popup .wry-translation {
+  font-size: 14px;
+  color: #0070c0;
+  margin-top: 4px;
+}
+
+/* ===== HSK colour coding =====
+   Used on annotated characters (.zh-char-block) and inside the selection
+   popup (.wry-chinese spans, .wry-pinyin .zh-pinyin-span). */
+
+/* Level 1 - green */
+.hsk-lv1 {
+  background-color: rgba(46, 160, 67, 0.30);
+  color: #145929;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #2ea043;
+}
+/* Level 2 - teal */
+.hsk-lv2 {
+  background-color: rgba(23, 162, 184, 0.30);
+  color: #0b5a68;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #17a2b8;
+}
+/* Level 3 - blue */
+.hsk-lv3 {
+  background-color: rgba(26, 115, 232, 0.30);
+  color: #123e7a;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #1a73e8;
+}
+/* Level 4 - purple */
+.hsk-lv4 {
+  background-color: rgba(147, 85, 213, 0.30);
+  color: #4f2a78;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #9355d5;
+}
+/* Level 5 - magenta */
+.hsk-lv5 {
+  background-color: rgba(232, 52, 132, 0.30);
+  color: #8a0f3a;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #e83484;
+}
+/* Level 6 - orange */
+.hsk-lv6 {
+  background-color: rgba(250, 153, 26, 0.30);
+  color: #7c4300;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #d98200;
+}
+/* Level 7 - red */
+.hsk-lv7 {
+  background-color: rgba(225, 34, 34, 0.30);
+  color: #7a0c0c;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #e12222;
+}
+/* Level 8 - crimson */
+.hsk-lv8 {
+  background-color: rgba(202, 30, 70, 0.30);
+  color: #64091f;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #ca1e46;
+}
+/* Level 9 - dark maroon */
+.hsk-lv9 {
+  background-color: rgba(120, 24, 24, 0.30);
+  color: #450909;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: inset 0 -2px 0 #781818;
+}
+
+/* Pinyin must ALWAYS stay neutral even when the character above is coloured.
+   (The hsk-lv* classes are applied to .zh-char, so they must never tint or
+   re-colour the .zh-pinyin below it.) */
+.zh-char-block .zh-pinyin {
+  color: #555 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Selection popup pinyin chips: tint the chip, keep the text readable */
+.zh-pinyin-span {
+  border-radius: 3px;
+  padding: 0 2px;
+  color: #444 !important;
+  box-shadow: none;
+}
+.zh-pinyin-span.hsk-lv1 { background: rgba(46,160,67,.25); }
+.zh-pinyin-span.hsk-lv2 { background: rgba(23,162,184,.25); }
+.zh-pinyin-span.hsk-lv3 { background: rgba(26,115,232,.25); }
+.zh-pinyin-span.hsk-lv4 { background: rgba(147,85,213,.25); }
+.zh-pinyin-span.hsk-lv5 { background: rgba(232,52,132,.25); }
+.zh-pinyin-span.hsk-lv6 { background: rgba(250,153,26,.30); }
+.zh-pinyin-span.hsk-lv7 { background: rgba(225,34,34,.26); }
+.zh-pinyin-span.hsk-lv8 { background: rgba(202,30,70,.26); }
+.zh-pinyin-span.hsk-lv9 { background: rgba(120,24,24,.26); }
+
+/* TTS "Read aloud" button bar */
+#wry-translation-popup .wry-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-right: 26px;
+  margin-bottom: 2px;
+}
+
+#wry-translation-popup .wry-tts {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #c8d2e0;
+  background: #f4f7fb;
+  color: #1e5fbf;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 14px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+#wry-translation-popup .wry-tts:hover {
+  background: #e3ecf7;
+}
+
+#wry-translation-popup .wry-tts.wry-tts-playing {
+  background: #ffe9e9;
+  border-color: #e2a3a3;
+  color: #b3261e;
+}
+
+/* Character currently being read aloud */
+.zh-sentence .zh-char-block.wry-tts-active {
+  background: rgba(255, 213, 66, 0.45);
+  border-radius: 4px;
+  box-shadow: inset 0 -2px 0 #f0c419;
+}
+
+.zh-sentence .zh-char-block.wry-tts-active .zh-pinyin {
+  color: #7a4d00 !important;
+  font-weight: bold;
+}

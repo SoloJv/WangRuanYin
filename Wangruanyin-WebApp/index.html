@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>王软音 · Wangruanyin — Web App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-title">
+      <span class="app-logo">软</span>
+      <div>
+        <h1>王软音 · Wangruanyin</h1>
+        <p class="tagline">Pinyin annotations, translations &amp; HSK colour coding — web app edition.</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="controls card">
+    <div class="control-group">
+      <span class="toggle-label">Pinyin annotations</span>
+      <label class="switch">
+        <input type="checkbox" id="togglePinyin" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="hint">Show pinyin under every Chinese character</span>
+    </div>
+
+    <div class="control-group">
+      <span class="toggle-label">Sentence translation</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleTranslation" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="hint">One translation row under each sentence (Google, needs internet)</span>
+    </div>
+
+    <div class="control-group lang-group">
+      <label class="lang-label" for="targetLang">Translation language</label>
+      <select id="targetLang">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="it">Italian</option>
+        <option value="pt">Portuguese</option>
+        <option value="ru">Russian</option>
+        <option value="ja">Japanese</option>
+        <option value="ko">Korean</option>
+        <option value="nl">Dutch</option>
+        <option value="pl">Polish</option>
+        <option value="tr">Turkish</option>
+      </select>
+    </div>
+
+    <div class="control-group hsk-group">
+      <span class="toggle-label">HSK colour coding</span>
+      <div class="hsk-radios">
+        <label class="hsk-radio">
+          <input type="radio" name="hskMode" value="off" checked>
+          <span>Off</span>
+        </label>
+        <label class="hsk-radio">
+          <input type="radio" name="hskMode" value="hsk2">
+          <span>HSK 2.0</span>
+        </label>
+        <label class="hsk-radio">
+          <input type="radio" name="hskMode" value="hsk3">
+          <span>HSK 3.0</span>
+        </label>
+      </div>
+      <span class="hint">Colour Chinese characters by their lowest HSK level · tap a colour in the legend to hide/show that level</span>
+      <div class="hsk-legend" id="hskLegend" role="group" aria-label="HSK level colour toggles">
+        <button type="button" class="hsk-color hsk-lv1" data-level="1" title="HSK 1 — click to toggle">1</button>
+        <button type="button" class="hsk-color hsk-lv2" data-level="2" title="HSK 2 — click to toggle">2</button>
+        <button type="button" class="hsk-color hsk-lv3" data-level="3" title="HSK 3 — click to toggle">3</button>
+        <button type="button" class="hsk-color hsk-lv4" data-level="4" title="HSK 4 — click to toggle">4</button>
+        <button type="button" class="hsk-color hsk-lv5" data-level="5" title="HSK 5 — click to toggle">5</button>
+        <button type="button" class="hsk-color hsk-lv6" data-level="6" title="HSK 6 — click to toggle">6</button>
+        <button type="button" class="hsk-color hsk-lv7" data-level="7" title="HSK 7 — click to toggle">7</button>
+        <button type="button" class="hsk-color hsk-lv8" data-level="8" title="HSK 8 — click to toggle">8</button>
+        <button type="button" class="hsk-color hsk-lv9" data-level="9" title="HSK 9 — click to toggle">9</button>
+      </div>
+    </div>
+
+    <div class="control-group tts-group">
+      <span class="toggle-label">Read page aloud</span>
+      <div class="tts-controls">
+        <button type="button" id="ttsToggle" class="tts-btn">▶ Play</button>
+        <button type="button" id="ttsStop" class="tts-btn" disabled>⏹ Stop</button>
+        <button type="button" id="ttsRestart" class="tts-btn" disabled>↺ Restart</button>
+      </div>
+      <span class="hint">Reads every annotated sentence aloud with the Chinese browser voice</span>
+    </div>
+  </section>
+
+  <section class="card browse-card">
+    <div class="browse-head">
+      <h2>🌐 Website mode <span class="tag">use Wangruanyin on any website, in a separate tab</span></h2>
+    </div>
+    <p class="browse-desc">
+      Type a website (e.g. <code>https://zh.wikipedia.org</code>), open it in a new tab, then apply 王软音 to it.
+      First-time setup: drag the <strong>王软音</strong> link below to your browser's bookmarks bar (or copy it).
+      Then open the website and click the bookmark — a floating panel appears with all the toggles,
+      and pinyin, translations &amp; HSK colours are applied to the page.
+    </p>
+    <div class="browse-row">
+      <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — the website you want to visit">
+      <button type="button" id="openSiteBtn" class="clear-btn">Open in new tab</button>
+    </div>
+    <div class="browse-row bookmark-row">
+      <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#">王软音 · Wangruanyin</a>
+      <button type="button" id="copyBookmarkletBtn" class="clear-btn">Copy bookmarklet</button>
+      <span id="browseStatus" class="browse-status"></span>
+    </div>
+    <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
+    <p id="browseFileWarning" class="browse-warning" hidden>
+      ⚠️ Website mode needs the app to be served over <strong>HTTP</strong> — e.g. open a terminal in the
+      <code>Wangruanyin-WebApp</code> folder and run <code>python -m http.server 8000</code>, then open
+      <code>http://localhost:8000/</code>. A page opened via <code>file://</code> cannot inject scripts into other websites.
+    </p>
+    <p class="hint">
+      The toggles above (pinyin, translation, language, HSK) are baked into the bookmarklet — change them here and the link updates automatically.
+      The bookmark applies them when clicked; "Translate selection" and the other toggles can be fine-tuned from the floating panel on the website.
+      Addresses without a protocol get <code>https://</code> added.
+    </p>
+  </section>
+
+  <main class="workspace">
+    <section class="pane input-pane card">
+      <div class="pane-head">
+        <h2>Chinese text</h2>
+        <button type="button" id="clearBtn" class="clear-btn">Clear</button>
+      </div>
+      <textarea id="inputText" spellcheck="false"
+        placeholder="Paste or type Chinese text here…">你好，世界！谢谢你的帮助。我喜欢学习中文，因为它很有趣。</textarea>
+      <p class="pane-note">The annotations update live as you type. Select any Chinese text in the output pane to get an instant translation popup.</p>
+    </section>
+
+    <section class="pane output-pane card">
+      <div class="pane-head">
+        <h2>Annotated output</h2>
+        <span id="status" class="status"></span>
+      </div>
+      <div id="wry-viewer" class="wry-viewer"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Translation: free Google Translate endpoint · Read-aloud: browser Web Speech API (Chinese voice) · Pinyin &amp; HSK data: offline, bundled with the app.</p>
+    <p><strong>Dual license:</strong> MIT (personal / non-commercial) · commercial use requires a paid license — see <a href="LICENSE">LICENSE</a> and <a href="COMMERCIAL_LICENSE.md">COMMERCIAL_LICENSE.md</a>. © Jan Victor Zamboni.</p>
+  </footer>
+
+  <script src="pinyin-dict-characters.js"></script>
+  <script src="pinyin-data.js"></script>
+  <script src="hsk2-char-levels.js"></script>
+  <script src="hsk3-char-levels.js"></script>
+  <script src="translator.js"></script>
+  <script src="annotator.js"></script>
+  <script src="app.js"></script>
+  <script src="browse.js"></script>
+</body>
+</html>

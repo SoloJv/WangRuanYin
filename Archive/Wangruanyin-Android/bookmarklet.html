@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wangruanyin bookmarklet</title>
+<style>
+  body{font-family:sans-serif;max-width:680px;margin:16px auto;padding:16px;color:#222;}
+  a.btn{display:inline-block;background:#1e78be;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;}
+</style>
+</head>
+<body>
+<h1>网软音 · Wangruanyin — Bookmarklet</h1>
+<p>Tap <b>Copy bookmarklet</b>, then add it as a bookmark <b>URL</b> in your mobile browser
+(Chrome/Edge/Brave/Opera/Firefox Android). On any Chinese page, select some Chinese text and tap
+the bookmark to see a floating panel with <b>pinyin</b> + a <b>translation</b>.</p>
+<ol>
+<li>Tap <b>Copy bookmarklet</b>.</li>
+<li>Whichever browser: open ⋮ → <b>Bookmarks</b> / <b>Add bookmark</b>.</li>
+<li>Paste into the bookmark <b>URL</b> field. Name it “Wangruanyin”.</li>
+<li>On a Chinese page, long-press to select Chinese text, then tap the bookmark.</li>
+</ol>
+
+<a class="btn" id="copyBtn">Copy bookmarklet</a>
+<div style="font-size:12px;color:#666;margin-top:8px">
+  Needs internet (it uses Google Translate for the translation; pinyin comes from a small embedded map).
+</div>
+
+<!-- The bookmarklet source is stored here as plain text so it needs no escaping. -->
+<script type="text/plain" id="wrySrc">
+(function(){
+  var d=document;
+  function sel(){
+    try{var s=d.getSelection();return s?s.toString().trim():''}catch(e){return ''}
+  }
+  function esc(t){var q=d.createElement('div');q.textContent=t;return q.innerHTML}
+  var t=sel();
+  if(!t){alert('Select some Chinese text first.');return}
+  var P={的:'de',是:'shi',了:'le',我:'wo',你:'ni',们:'men',在:'zai',有:'you',一:'yi',个:'ge',人:'ren',中:'zhong',来:'lai',上:'shang',爱:'ai',文:'wen',年:'nian',学:'xue',习:'xi',中:'zhong'};
+  var py='';for(var i=0;i<t.length;i++){var c=t[i];py+=(P[c]||c)+' '}
+  var u='https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q='+encodeURIComponent(t);
+  fetch(u).then(function(r){return r.json()}).then(function(j){
+    var tr=j[0].map(function(x){return x[0]}).join('');
+    var p=document.getElementById('wry-p');if(p)p.remove();
+    p=document.createElement('div');p.id='wry-p';
+    p.style.cssText='position:fixed;right:8px;bottom:8px;z-index:99999;max-width:280px;max-height:70% ;background:#fff;color:#222;border:1px solid #ccc;border-radius:8px;padding:8px 10px;font:12px/1.5 sans-serif;overflow:auto';
+    p.innerHTML='<b>Wangruanyin</b> <a href="#" style="float:right;cursor:pointer">&times;</a>'+
+      '<div>中文</div>'+esc(t)+'<div>拼音</div>'+esc(py)+'<div>译文</div>'+esc(tr);
+    d.body.appendChild(p);
+    p.querySelector('a').onclick=function(){p.remove();return false};
+  }).catch(function(){alert('Translation failed.');});
+})();
+</script>
+
+<script>
+var copyBtn = document.getElementById("copyBtn");
+function buildUri(){
+  var src = document.getElementById("wrySrc").textContent.replace(/\s+/g," ");
+  return "javascript:" + encodeURIComponent(src);
+}
+copyBtn.onclick = function(){
+  var uri = buildUri();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(uri).then(function(){alert("Bookmarklet copied! Add it as a bookmark URL.");});
+  } else {
+    var ta=document.createElement("textarea"); ta.value=uri; document.body.appendChild(ta); ta.select();
+    try{document.execCommand("copy");}catch(e){}
+    alert("Bookmarklet copied! Add it as a bookmark URL."); document.body.removeChild(ta);
+  }
+};
+</script>
+</body>
+</html>
