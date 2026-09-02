@@ -98,39 +98,43 @@
 
   <section class="card browse-card">
     <div class="browse-head">
-      <h2>🌐 Website mode <span class="tag">use Wangruanyin on any website, in a separate tab</span></h2>
+      <h2>🌐 Website mode <span class="tag">apply 王软音 to any website, automatically</span></h2>
     </div>
     <p class="browse-desc">
-      Type a website (e.g. <code>https://zh.wikipedia.org</code>), open it in a new tab, then apply 王软音 to it.
-      First-time setup: drag the <strong>王软音</strong> link below to your browser's bookmarks bar (or copy it).
-      Then open the website and click the bookmark — a floating panel appears with all the toggles,
-      and pinyin, translations &amp; HSK colours are applied to the page.
+      Type a website and click <strong>Open with 王软音</strong> — it opens in a new tab of this web app,
+      the page is fetched and rendered there, and pinyin, translations &amp; HSK colours are applied
+      <strong>automatically</strong> (a floating panel lets you adjust the toggles on the page).
+      Your toggles and HSK choices from above are used automatically.
     </p>
     <div class="browse-row">
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — the website you want to visit">
-      <button type="button" id="openSiteBtn" class="clear-btn">Open in new tab</button>
+      <button type="button" id="openSiteBtn" class="btn-open">Open with 王软音</button>
+      <button type="button" id="openPlainBtn" class="clear-btn" title="Open the real website in a normal tab">Open real site</button>
     </div>
-    <div class="browse-row bookmark-row">
-      <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#">王软音 · Wangruanyin</a>
-      <button type="button" id="copyBookmarkletBtn" class="clear-btn">Copy bookmarklet</button>
-      <span id="browseStatus" class="browse-status"></span>
-    </div>
-    <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
-    <p id="browseFileWarning" class="browse-warning" hidden>
-      ⚠️ You opened the app from disk (<code>file://</code>). The bookmarklet will use the published
-      <strong>GitHub</strong> bases located at <code>https://solojv.github.io/WangRuanYin/</code> and the
-      jsDelivr CDN — both need the repository to be <strong>public</strong> (see the README and the
-      reachability check below). For local development, run
-      <code>python -m http.server 8000</code> inside the <code>Wangruanyin-WebApp</code> folder and open
-      <code>http://localhost:8000/</code>.
-    </p>
-    <div id="browseProbe" class="browse-probe" aria-live="polite"></div>
-    <p class="hint">
-      The toggles above (pinyin, translation, language, HSK) are baked into the bookmarklet — change them here and the link updates automatically.
-      The bookmark applies them when clicked; "Translate selection" and the other toggles can be fine-tuned from the floating panel on the website (and are remembered per site).
-      This app is hosted on <strong>GitHub Pages</strong> at <code>https://solojv.github.io/WangRuanYin/</code> — the reachability check below confirms which sources the bookmarklet can load the engine from.
-      Addresses without a protocol get <code>https://</code> added.
-    </p>
+    <p id="browseStatus" class="browse-status" hidden></p>
+
+    <details class="advanced">
+      <summary>Advanced — bookmarklet for sites the reader can't fetch (login walls, heavy JavaScript)</summary>
+      <p class="browse-desc">
+        Some websites can't be fetched into the reader (login-required, IP-blocked to proxies, or only
+        client-side rendered). For those, drag the <strong>王软音</strong> link to your bookmarks bar,
+        open the real site, and click the bookmark — the floating panel appears on the page itself.
+      </p>
+      <div class="browse-row bookmark-row">
+        <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#">王软音 · Wangruanyin</a>
+        <button type="button" id="copyBookmarkletBtn" class="clear-btn">Copy bookmarklet</button>
+      </div>
+      <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
+      <div id="browseProbe" class="browse-probe" aria-live="polite"></div>
+      <p id="browseFileWarning" class="browse-warning" hidden>
+        ⚠️ You opened the app from disk (<code>file://</code>). The reader and bookmarklet load the engine
+        from the published GitHub bases (<code>https://solojv.github.io/WangRuanYin/</code> and the jsDelivr CDN).
+      </p>
+      <p class="hint">
+        The toggles above are used automatically by the reader and are also baked into this bookmarklet —
+        change them here and the link updates. Addresses without a protocol get <code>https://</code> added.
+      </p>
+    </details>
   </section>
 
   <main class="workspace">

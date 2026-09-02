@@ -536,6 +536,8 @@
   }
 // --- panel wiring ------------------------------------------------------------
   function wirePanel() {
+    if (panel && panel.__wryWired) return;
+    if (panel) panel.__wryWired = true;
     const pPin = byId('wrypgPinyin');
     const pTrans = byId('wrypgTrans');
     const pSel = byId('wrypgSel');
@@ -669,4 +671,15 @@
   }
 
   window.WryPageRunner = { init, cleanup, applySettings };
+
+  // Safety boot: the reader page (parent) may postMessage us after load to
+  // re-apply settings if our inline bootstrap somehow lost the race.
+  if (window.addEventListener) {
+    window.addEventListener('message', (ev) => {
+      const d = ev.data;
+      if (d && d.t === 'wryBoot' && window.WryPageRunner) {
+        window.WryPageRunner.init(d.s || window.__WRY_PAGE_SETTINGS__ || undefined);
+      }
+    }, false);
+  }
 })();

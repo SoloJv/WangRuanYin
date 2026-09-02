@@ -44,15 +44,30 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 
 ### Use Wangruanyin on any website (website mode)
 
-The web app can annotate **other websites** too, without installing an extension. A browser page cannot inject scripts into a separate tab (same-origin policy), so the standard technique is a **bookmarklet** that the index page generates for you:
+The web app can annotate **other websites** in a separate tab. A plain web page cannot inject scripts
+into another website's tab (same-origin policy), so the app does it itself: it fetches the page through
+public CORS proxies, renders it in a sandboxed iframe inside its own new tab, and injects the engine
+there — pinyin, translations and HSK colours appear **automatically**, no extra clicks:
 
-1. **Open the app** from anywhere — the generated bookmarklet tries, in order, the **GitHub Pages** build at `https://solojv.github.io/WangRuanYin/`, the **jsDelivr CDN** mirror of the repo, and finally the **local origin** you're viewing from (if served over HTTP). Only one of these needs to be reachable, so website mode works even before GitHub Pages is enabled — the repo just has to be **public**. For local testing run `python -m http.server 8000` in the `Wangruanyin-WebApp` folder and open `http://localhost:8000/`.
-2. In the **🌐 Website mode** card: type the website you want to visit (e.g. `https://zh.wikipedia.org`) and click **Open in new tab**.
-3. **Install the bookmarklet once**: drag the green **王软音 · Wangruanyin** link to your bookmarks bar, or click **Copy bookmarklet** and paste it as a new bookmark. The bookmarklet bakes in the current toggles (pinyin, translation, language, HSK) — change them on the index page and the link updates automatically.
-4. In the opened website tab, click the **王软音** bookmark. The engine scripts are injected (from the first reachable base), a small floating **王软音 panel** appears in the corner, and the page gets pinyin, translations and HSK colours applied.
-5. The floating panel gives you the same controls on the page itself: pinyin, sentence translation, translate-selection, language, HSK version + per-level legend, read-aloud, and **Reset**. Your panel toggles are remembered **per website** (in the site's own localStorage), so next time you click the bookmark the same choices are re-applied — exactly like the extension's stored settings. Click **×** to restore the page.
+1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
+2. In the **🌐 Website mode** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open with 王软音**.
+3. A new tab of the app opens the **reader**: the page is fetched and rendered there (server-rendered
+   pages like Wikipedia, news and blogs work best), and the floating **王软音 panel** appears with the
+   full set of toggles — pinyin, sentence translation, translate-selection, language, HSK version +
+   per-level legend, read-aloud and Reset. Your toggles from the index page are used automatically.
+   The reader's top bar offers Back / address bar / Go / **↗ Real site** / Close, and internal links
+   navigate inside the reader.
 
-> HTTPS note: the GitHub Pages build and the jsDelivr CDN are both served over **HTTPS**, so the bookmarklet works on any `https://` website directly. If you run a local server instead, `http://localhost` is treated as a “potentially trustworthy” origin by Chrome and Firefox, so it also works on `https://` sites; a non-localhost HTTP server would only work on plain-`http` sites.
+> **When the reader can't load a site** (login walls, sites that block public proxies, client-side-only
+> apps): the reader shows an error with two options — open the **real site** and use the
+> **bookmarklet** under the card's **Advanced** section, or try another address. The Advanced
+> bookmarklet injects the engine straight into any page you're viewing (loads from GitHub Pages or the
+> jsDelivr CDN, whichever answers first); drag it to the bookmarks bar once, then click it on a page
+> to bring up the panel there.
+
+> HTTPS note: GitHub Pages and the jsDelivr CDN are HTTPS, so both the reader and the bookmarklet work
+> on `https://` websites directly. A local `http://localhost` server is treated as trustworthy by Chrome
+> and Firefox; a non-localhost HTTP server would only work on plain-`http` sites.
 
 ### Hosting on GitHub Pages
 
@@ -75,12 +90,13 @@ The included workflow (`.github/workflows/deploy-pages.yml`) runs on every push 
 Wangruanyin-WebApp/
 ├── index.html                  (the app UI, incl. website-mode card)
 ├── styles.css                  (app styles)
-├── page-styles.css             (styles injected into visited websites)
+├── page-styles.css             (styles injected into fetched/visited pages)
 ├── app.js                      (paste-text controller: rendering, popup, TTS)
 ├── annotator.js                (pinyin annotation + HSK engine)
 ├── translator.js               (Google Translate call)
-├── page-runner.js              (website-mode engine + floating panel)
-├── browse.js                   (URL open + bookmarklet generator)
+├── page-runner.js              (injected engine + floating panel)
+├── browse.js                   (website-mode open buttons + advanced bookmarklet)
+├── reader.html / reader.js     (website reader: fetch → sandboxed iframe → auto-annotate)
 ├── pinyin-data.js              (pinyin lookup helpers)
 ├── pinyin-dict-characters.js   (large character→pinyin dictionary — REQUIRED)
 ├── hsk2-char-levels.js         (HSK 2.0 char→level data)
@@ -162,9 +178,9 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
-- **Website mode: bookmarklet does nothing?** The bookmarklet tries three sources in order: GitHub Pages → jsDelivr CDN → local origin. At least one must be reachable and the repo must be public for the GitHub ones. The index page's “Checking where the engine can be loaded from…” panel shows which bases are reachable. Check the browser console on the target page for errors.
-- **Website mode: “Open in new tab” blocked?** Allow pop-ups for the app page, or copy the address and open it yourself, then click the bookmark.
-- **Website mode toggles not remembered?** The panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the bookmark defaults.
+- **Website mode: the reader can't load a site?** The reader fetches pages through public CORS proxies — sites that block those proxies (or require login, or render only via client-side JS) will show the error page. Use **↗ Real site** in the reader's toolbar, open the site in a normal tab, and use the **Advanced** bookmarklet there, or try a different (server-rendered) address.
+- **Website mode: “Open with 王软音” blocked?** Allow pop-ups for the app page, or copy the address and open it yourself (append `reader.html?url=…`), then use the Advanced bookmarklet.
+- **Website mode toggles not remembered?** The panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the defaults.
 
 ---
 
