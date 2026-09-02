@@ -46,23 +46,27 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 
 The web app can annotate **other websites** too, without installing an extension. A browser page cannot inject scripts into a separate tab (same-origin policy), so the standard technique is a **bookmarklet** that the index page generates for you:
 
-1. **Serve the app over HTTP(S)** — a `file://` page cannot host scripts for other websites. The easiest way is the GitHub Pages build at **`https://solojv.github.io/WangRuanYin/`** (recommended). Locally, from the `Wangruanyin-WebApp` folder run `python -m http.server 8000` and open `http://localhost:8000/` (VS Code Live Server works too).
+1. **Open the app** from anywhere — the generated bookmarklet tries, in order, the **GitHub Pages** build at `https://solojv.github.io/WangRuanYin/`, the **jsDelivr CDN** mirror of the repo, and finally the **local origin** you're viewing from (if served over HTTP). Only one of these needs to be reachable, so website mode works even before GitHub Pages is enabled — the repo just has to be **public**. For local testing run `python -m http.server 8000` in the `Wangruanyin-WebApp` folder and open `http://localhost:8000/`.
 2. In the **🌐 Website mode** card: type the website you want to visit (e.g. `https://zh.wikipedia.org`) and click **Open in new tab**.
 3. **Install the bookmarklet once**: drag the green **王软音 · Wangruanyin** link to your bookmarks bar, or click **Copy bookmarklet** and paste it as a new bookmark. The bookmarklet bakes in the current toggles (pinyin, translation, language, HSK) — change them on the index page and the link updates automatically.
-4. In the opened website tab, click the **王软音** bookmark. The engine scripts are injected from your web app server, a small floating **王软音 panel** appears in the corner, and the page gets pinyin, translations and HSK colours applied.
-5. The floating panel gives you the same controls on the page itself: pinyin, sentence translation, translate-selection, language, HSK version + per-level legend, and read-aloud. Click **×** to restore the page.
+4. In the opened website tab, click the **王软音** bookmark. The engine scripts are injected (from the first reachable base), a small floating **王软音 panel** appears in the corner, and the page gets pinyin, translations and HSK colours applied.
+5. The floating panel gives you the same controls on the page itself: pinyin, sentence translation, translate-selection, language, HSK version + per-level legend, read-aloud, and **Reset**. Your panel toggles are remembered **per website** (in the site's own localStorage), so next time you click the bookmark the same choices are re-applied — exactly like the extension's stored settings. Click **×** to restore the page.
 
-> HTTPS note: the GitHub Pages build is served over **HTTPS**, so the bookmarklet works on any `https://` website directly. If you run a local server instead, `http://localhost` is treated as a “potentially trustworthy” origin by Chrome and Firefox, so it also works on `https://` sites; a non-localhost HTTP server would only work on plain-`http` sites.
+> HTTPS note: the GitHub Pages build and the jsDelivr CDN are both served over **HTTPS**, so the bookmarklet works on any `https://` website directly. If you run a local server instead, `http://localhost` is treated as a “potentially trustworthy” origin by Chrome and Firefox, so it also works on `https://` sites; a non-localhost HTTP server would only work on plain-`http` sites.
 
 ### Hosting on GitHub Pages
 
 The repo is set up to publish the web app with GitHub Pages (repo **`SoloJv/WangRuanYin`**):
 
-1. Push the repo to GitHub (branch **`main`**).
-2. Repo **Settings → Pages → Source: “GitHub Actions”** (choose **Deploy from a branch** only if you prefer a manual source; the Actions workflow below is the recommended way).
-3. The included workflow (`.github/workflows/deploy-pages.yml`) runs on every push to `main` (or manually via **Actions → Deploy Web App to GitHub Pages → Run workflow**) and uploads the `Wangruanyin-WebApp` folder as the site.
-4. The web app is then live at **`https://solojv.github.io/WangRuanYin/`** — open it there and use **🌐 Website mode** to annotate any website from that HTTPS address.
-   - A `.nojekyll` file is shipped in the folder so Pages serves the files raw.
+> ⚠️ **GitHub Pages requires the repository to be PUBLIC.** On the free plan, Pages (and the jsDelivr CDN fallback used by the bookmarklet) only work for public repositories. If you see **“There isn't a GitHub Pages site here”** at the Pages URL, the repo is still private — make it public first:
+>
+> 1. Repo **Settings → General → Danger Zone → Change visibility → Make public** (requires confirming the repo name).
+> 2. Repo **Settings → Pages → Source: “GitHub Actions”**.
+> 3. The included workflow (`.github/workflows/deploy-pages.yml`) runs on every push to `main` (or manually via **Actions → Deploy Web App to GitHub Pages → Run workflow**) and uploads the `Wangruanyin-WebApp` folder as the site.
+> 4. The web app is then live at **`https://solojv.github.io/WangRuanYin/`**.
+>    - A `.nojekyll` file is shipped in the folder so Pages serves the files raw.
+
+> **Until Pages is up, website mode still works:** the generated bookmarklet falls back to the jsDelivr CDN (`cdn.jsdelivr.net/gh/SoloJv/WangRuanYin@main/Wangruanyin-WebApp/`) — which only needs the repo to be **public**, not Pages enabled. On the index page the “Checking where the engine can be loaded from…” panel shows exactly which base is reachable and why.
 
 > If the repo owner uses a **custom domain**, the app is served at that domain's root instead; `browse.js` computes all script URLs relative to the current page, so it works with any Pages URL (project sub-path or root) without extra configuration.
 
@@ -158,8 +162,10 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Reload after editing (extension)?** Click the ↻ (reload) on the extension card on the extensions page, then refresh the target web page.
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
-- **Website mode: bookmarklet does nothing?** Make sure the web app is served over HTTP(S) (not `file://`) and the server is still running — the bookmarklet loads its scripts from that server. The GitHub Pages build (`https://solojv.github.io/WangRuanYin/`) works everywhere; a non-localhost local server must be reachable from the website you're viewing (and `http://` servers won't work on `https://` pages — mixed content). Check the browser console on the target page for errors.
+- **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** The repository is **private**. GitHub Pages (free) — and the jsDelivr CDN fallback — only serve public repositories. Make the repo public: **Settings → General → Danger Zone → Change visibility → Make public**, then **Settings → Pages → Source: “GitHub Actions”**. No code changes are needed after that.
+- **Website mode: bookmarklet does nothing?** The bookmarklet tries three sources in order: GitHub Pages → jsDelivr CDN → local origin. At least one must be reachable and the repo must be public for the GitHub ones. The index page's “Checking where the engine can be loaded from…” panel shows which bases are reachable. Check the browser console on the target page for errors.
 - **Website mode: “Open in new tab” blocked?** Allow pop-ups for the app page, or copy the address and open it yourself, then click the bookmark.
+- **Website mode toggles not remembered?** The panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the bookmark defaults.
 
 ---
 

@@ -32,6 +32,44 @@
   let hskHighlight = false;      // standalone HSK highlight (no translation)
   let processing = false;
 
+  // Per-site persistence — like the extension's chrome.storage: toggles changed
+  // in the floating panel are remembered for that website in the site's own
+  // localStorage and re-applied the next time the bookmarklet is clicked.
+  let defaultSettings = null;
+  const SITE_KEY_PREFIX = 'wry_site_settings_';
+
+  function siteKey() {
+    const host = (location.hostname || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const safe = (host || 'local').slice(0, 60);
+    let h = 0;
+    for (let i = 0; i < safe.length; i++) h = ((h << 5) - h + safe.charCodeAt(i)) | 0;
+    return SITE_KEY_PREFIX + (h >>> 0);
+  }
+
+  function loadSavedSettings() {
+    try {
+      const raw = window.localStorage.getItem(siteKey());
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (o && typeof o === 'object') return o;
+    } catch (e) { /* storage blocked / corrupt */ }
+    return null;
+  }
+
+  function saveSettings() {
+    try {
+      window.localStorage.setItem(siteKey(), JSON.stringify({
+        pinyin: isEnabled,
+        translation: settings.translation !== false,
+        selection: selectionEnabled,
+        lang: targetLang,
+        hsk: hskMode,
+        disabled: hskDisabledLevels.slice(),
+        hskHighlight: hskHighlight
+      }));
+    } catch (e) { /* storage blocked on this site */ }
+  }
+
   const transCache = {};
   let transLang = null;
 
@@ -441,7 +479,10 @@
     panel.innerHTML =
       '<div class="wry-panel-head">' +
         '<span class="wry-panel-title">王软音 · Wangruanyin</span>' +
-        '<button type="button" class="wry-panel-close" title="Close and restore the page">&times;</button>' +
+        '<span class="wry-panel-head-btns">' +
+          '<button type="button" id="wrypgReset" class="wry-panel-btn" title="Forget this website&#39;s saved toggles and use the bookmark defaults">Reset</button>' +
+          '<button type="button" class="wry-panel-close" title="Close and restore the page">&times;</button>' +
+        '</span>' +
       '</div>' +
       '<label class="wry-panel-row"><span>Pinyin annotations</span><span class="wry-switch"><input type="checkbox" id="wrypgPinyin"><span class="wry-slider"></span></span></label>' +
       '<label class="wry-panel-row"><span>Sentence translation</span><span class="wry-switch"><input type="checkbox" id="wrypgTrans"><span class="wry-slider"></span></span></label>' +
@@ -505,11 +546,13 @@
       settings.pinyin = isEnabled;
       if (!isEnabled) { removeAnnotations(); setStatus('Pinyin annotations off.'); }
       else { processPage(); }
+      saveSettings();
     });
 
     pTrans.addEventListener('change', () => {
       settings.translation = pTrans.checked;
       rebuildAnnotation();
+      saveSettings();
     });
 
     pSel.addEventListener('change', () => {
@@ -522,6 +565,7 @@
         document.removeEventListener('mouseup', onSelectionMouseUp);
         hideTranslationPopup();
       }
+      saveSettings();
     });
 
     pLang.addEventListener('change', () => {
@@ -530,6 +574,7 @@
       transLang = null;
       for (const k in transCache) delete transCache[k];
       rebuildAnnotation();
+      saveSettings();
     });
 
     panel.querySelectorAll('#wrypgHskWrap input').forEach((r) => {
@@ -542,6 +587,7 @@
         rebuildAnnotation();
         if (hskHighlight) { removeStandaloneHsk(); applyStandaloneHsk(); }
         setStatus({ off: 'HSK colouring Off', hsk2: 'HSK 2.0 colours', hsk3: 'HSK 3.0 colours' }[hskMode] || hskMode);
+        saveSettings();
       });
     });
 
@@ -557,11 +603,25 @@
         updateLegend();
         rebuildAnnotation();
         if (hskHighlight) { removeStandaloneHsk(); applyStandaloneHsk(); }
+        saveSettings();
       });
     });
 
     byId('wrypgPlay').addEventListener('click', togglePageReader);
     byId('wrypgStop').addEventListener('click', () => stopPageReader(false));
+
+    // Reset: forget this site's saved toggles and re-apply the bookmark defaults.
+    const resetBtn = byId('wrypgReset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        try { window.localStorage.removeItem(siteKey()); } catch (e) {}
+        applySettings(defaultSettings || settings);
+        syncPanel();
+        rebuildAnnotation();
+        if (hskHighlight && hskMode !== 'off') { removeStandaloneHsk(); applyStandaloneHsk(); }
+        setStatus('Reset to the bookmark defaults.');
+      });
+    }
 
     panel.querySelector('.wry-panel-close').addEventListener('click', cleanup);
   }
@@ -592,7 +652,13 @@
   }
 
   function init(s) {
-    applySettings(s);
+    defaultSettings = Object.assign(
+      { pinyin: true, translation: true, selection: false, lang: 'en', hsk: 'off', disabled: [], hskHighlight: false },
+      s || {}
+    );
+    applySettings(defaultSettings);
+    const saved = loadSavedSettings();
+    if (saved) applySettings(saved); // per-site toggles win over the bookmark defaults
     buildPanel();
     wirePanel();
     syncPanel();

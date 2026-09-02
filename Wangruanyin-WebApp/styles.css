@@ -306,3 +306,25 @@ input:checked + .slider:before { transform: translateX(20px); }
   line-height: 1.6;
 }
 .browse-status { font-size: 12px; color: var(--on); font-weight: 600; }
+.browse-probe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+  padding: 8px 12px;
+  background: #f4f7fb;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+}
+.probe-title { font-size: 12px; color: #244d7d; font-weight: 600; }
+.probe-row { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+.probe-dot {
+  width: 18px; height: 18px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 11px; color: #fff; font-weight: bold;
+}
+.probe-dot.ok { background: var(--on); }
+.probe-dot.bad { background: #cc4444; }
+.probe-name { font-weight: 600; color: #333; }
+.probe-note { color: var(--muted); }
+.probe-url { color: #1f5fa6; font-size: 11px; }

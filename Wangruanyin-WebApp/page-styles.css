@@ -185,6 +185,15 @@
   font-size: 13px;
   color: #1f5fa6;
 }
+.wry-panel-head-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wry-panel-head-btns .wry-panel-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+}
 .wry-panel-close {
   border: none;
   background: none;

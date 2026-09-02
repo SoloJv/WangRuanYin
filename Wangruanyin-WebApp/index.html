@@ -117,16 +117,19 @@
     </div>
     <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
     <p id="browseFileWarning" class="browse-warning" hidden>
-      ⚠️ Website mode needs the app to be served over <strong>HTTP(S)</strong>. The easiest way is to
-      host it on <strong>GitHub Pages</strong> (see the README — the repo already ships a workflow at
-      <code>.github/workflows/deploy-pages.yml</code>), so it runs at
-      <code>https://solojv.github.io/WangRuanYin/</code>. Locally, from the
-      <code>Wangruanyin-WebApp</code> folder run <code>python -m http.server 8000</code> and open
-      <code>http://localhost:8000/</code>. A page opened via <code>file://</code> cannot inject scripts into other websites.
+      ⚠️ You opened the app from disk (<code>file://</code>). The bookmarklet will use the published
+      <strong>GitHub</strong> bases located at <code>https://solojv.github.io/WangRuanYin/</code> and the
+      jsDelivr CDN — both need the repository to be <strong>public</strong> (see the README and the
+      reachability check below). For local development, run
+      <code>python -m http.server 8000</code> inside the <code>Wangruanyin-WebApp</code> folder and open
+      <code>http://localhost:8000/</code>.
     </p>
+    <div id="browseProbe" class="browse-probe" aria-live="polite"></div>
     <p class="hint">
       The toggles above (pinyin, translation, language, HSK) are baked into the bookmarklet — change them here and the link updates automatically.
-      The bookmark applies them when clicked; "Translate selection" and the other toggles can be fine-tuned from the floating panel on the website.
+      The bookmark applies them when clicked; "Translate selection" and the other toggles can be fine-tuned from the floating panel on the website (and are remembered per site).
+      If a check below shows ✗ GitHub Pages: make the repository <strong>public</strong> and enable
+      <strong>Settings → Pages → Source: "GitHub Actions"</strong>; the bookmarklet already falls back to the jsDelivr CDN as soon as the repo is public.
       Addresses without a protocol get <code>https://</code> added.
     </p>
   </section>
