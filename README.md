@@ -1,5 +1,7 @@
 # 王软音 · Wangruanyin
 
+Translation and learning service for HSK learners 
+
 **王软音 (Wangruanyin)** adds **pinyin** (Romanized pronunciation) annotations and **translations** to Chinese text, plus **HSK colour coding** and **read-aloud**. It ships in four forms: a **web app** and browser extensions for **Chrome, Edge, Firefox and Safari**.
 
 This is the single, central README. The browser-specific folders each contain their own build, but read **this** file for installation and operation.
@@ -167,3 +169,4 @@ WRY/
 ├── Wangruanyin.zip            ← Chrome/Edge dev-package
 └── Wangruanyin-Edge.zip       ← Edge dev-package
 ```
+8ea30f2b664acc74f78c7fc2bc0569eb6b69cb6b
