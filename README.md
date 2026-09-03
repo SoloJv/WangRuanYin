@@ -54,11 +54,15 @@ proxies as last resort — rendered in a sandboxed iframe below the toggles, and
 2. In the **🌐 Website viewer** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open in this page**.
 3. The site loads and fills **the whole page** — there is no loading banner: a small spinner appears
    briefly in the **Open website** button while it fetches, then the page appears and is annotated
-   automatically. The annotation controls live in a collapsible **tools panel** (⚙ button in the header)
-   that is hidden by default, so the website gets every pixel. A fetched page that has a consent/lightbox
-   overlay can be cleared with the **╳ Close popup** button in the header. Changing a toggle re-annotates
-   the page instantly, and the site is cached (15 min) so re-opening it is instant. On mobile,
-   tap-and-hold Chinese text to get a translation popup (the **Translate on selection** toggle).
+   automatically. Links on the page navigate **inside the viewer**, and 王软音 re-annotates each page
+   as you go. The annotation controls live in a collapsible **tools panel** (⚙ button in the header)
+   that is hidden by default, so the website gets every pixel. Changing a toggle re-annotates the page
+   instantly, and the site is cached (15 min) so re-opening it is instant. On mobile, tap-and-hold
+   Chinese text to get a translation popup (the **Translate on selection** toggle).
+
+> **Sites that can't be rendered** (login walls, heavy JS like Weibo, or sites that block all readers):
+> the viewer shows a **↗ Open the real site** button — click it to open the page in a new tab, where the
+> browser **extension** annotates it natively.
 
 > Why not open the real site in a tab? A plain web page cannot run scripts inside another website's tab
 > (same-origin policy), so fetching and rendering here is the only way the app's features can control the
@@ -174,8 +178,7 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
-- **Website viewer: can't load a site?** The viewer fetches pages through Jina Reader, the Wikimedia CORS API (for Wikipedia articles) and public CORS proxies. Sites that block all of those (or require login, or render only via client-side JS) show an error — try a server-rendered address, or use the browser **extension**, which annotates any page natively.
-- **Website viewer: there's a popup on the site I can't close?** The site runs in a sandbox (cookies/storage are blocked), so its own "close" scripts may not run. Use the **╳ Close popup** button in the app header — it removes full-screen modal/consent overlays from the fetched page.
+- **Website viewer: can't load a site?** The viewer fetches pages through Jina Reader, the Wikimedia CORS API (for Wikipedia articles) and public CORS proxies. Sites that block all of those (or require login, or render only via client-side JS) show an error — click **↗ Open the real site** to open it in a new tab (the browser **extension** can annotate it there), or try a server-rendered address.
 - **Website viewer toggles not remembered?** The floating panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the defaults.
 
 ---

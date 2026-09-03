@@ -19,7 +19,6 @@
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — open a website here">
       <button type="button" id="openSiteBtn" class="btn-open">Open website</button>
       <button type="button" id="toolsToggle" class="clear-btn header-btn" aria-expanded="true" title="Show or hide the annotation tools">⚙ Hide tools ▴</button>
-      <button type="button" id="closePopupBtn" class="clear-btn header-btn" hidden title="Try to close an overlay / popup of the opened website">╳ Close popup</button>
     </div>
     <p id="browseStatus" class="browse-status" hidden></p>
   </header>
@@ -122,6 +121,7 @@
       proxies) to fetch <code id="errUrl"></code>, but none returned a usable copy.
       Causes are usually login-required pages, sites that block readers/proxies, or apps
       that render only with client-side JavaScript.</p>
+      <p><button type="button" id="openRealSiteBtn" class="btn-open">↗ Open the real site in a new tab</button></p>
       <p>Try a server-rendered address — Wikipedia, news and blogs work well.</p>
     </div>
   </div>

@@ -22,8 +22,8 @@
   const toolsPanel = $('toolsPanel');
   const toolsToggle = $('toolsToggle');
   const viewerCloseBtn = $('viewerCloseBtn');
-  const closePopupBtn = $('closePopupBtn');
   const siteHost = $('siteHost');
+  const openRealSiteBtn = $('openRealSiteBtn');
 
   // Cached copy of the most recent site (persisted in localStorage, session as a
   // fallback) so re-opening a website is instant instead of re-fetching the page.
@@ -277,42 +277,22 @@
       '</scr' + 'ipt>';
   }
 
-  // Converts in-page links into viewer navigation via window.parent.postMessage.
+  // Converts in-page navigation into viewer navigation via window.parent.postMessage.
+  // Only absolute http(s) links navigating to a DIFFERENT document are sent — a
+  // hash-only link (same page) or a mailto/tel link keeps the browser default.
   function navHook() {
     return '<scr' + 'ipt>(function(d){function h(e){' +
       'var a=e.target&&e.target.closest?e.target.closest("a"):null;if(!a)return;' +
-      'var href=a.getAttribute("href");if(!href)return;' +
+      'var href=a.getAttribute("href");if(!href||href.charAt(0)==="#")return;' +
       'var u;try{u=new URL(href,document.baseURI);}catch(x){return;}' +
-      'if(u.protocol==="http:"||u.protocol==="https:"){e.preventDefault();' +
+      'if(u.protocol==="http:"||u.protocol==="https:"){' +
+      'if(u.origin===location.origin&&u.pathname===location.pathname&&(u.hash||"")!==(location.hash||""))return;' +
+      'e.preventDefault();' +
       'window.parent.postMessage({t:"wryNav",u:u.href},"*");}}' +
       'd.addEventListener("click",h,false);})(document);</scr' + 'ipt>';
   }
 
-  // Keeps the app's "Close popup" button working inside the sandboxed page:
-  // listens for a wryCloseOverlay message from the host and also auto-removes
-  // typical modal/consent overlays after a short delay (their own close scripts
-  // often can't run in the sandbox because they need cookies/storage).
-  function overlayCloseHook() {
-    return '<scr' + 'ipt>(function(){' +
-      'var kill=function(){var w=innerWidth,h=innerHeight;' +
-      'var els=document.querySelectorAll("body *");' +
-      'for(var i=0;i<els.length;i++){var el=els[i],s,r,z;' +
-      'try{s=getComputedStyle(el);}catch(e){continue;}' +
-      'if(s.position!=="fixed"&&s.position!=="sticky")continue;' +
-      'try{r=el.getBoundingClientRect();}catch(e){continue;}' +
-      'if(r.width>(w*0.6)&&r.height>(h*0.5)){' +
-      'z=parseInt(s.zIndex,10)||0;' +
-      'if(z>=100||(el.matches&&el.matches("[role=dialog],[aria-modal=true],[class*=modal],[class*=dialog],[class*=overlay],[class*=cookie],[id*=popup]")))){' +
-      'try{el.remove(el.parentNode);}catch(e){}}}}' +
-      'document.documentElement.style.overflow="auto";' +
-      'document.body.style.overflow="auto";};' +
-      'window.addEventListener("message",function(e){var d=e.data;if(d&&d.t==="wryCloseOverlay")kill();});' +
-      'setTimeout(kill,2500);' +
-      'document.addEventListener("click",function(){setTimeout(kill,450);},true);' +
-      '})();</scr' + 'ipt>';
-  }
-
-  // Builds the sandboxed document: fetched page + our <base> (so relative
+    // Builds the sandboxed document: fetched page + our <base> (so relative
   // images/CSS resolve to the real site) + engine bootstrap + nav hook.
   function buildDocHtml(html, url, settings, bases) {
     let doc = html.replace(/<base[^>]*>/gi, ''); // only the first <base> is honoured
@@ -322,7 +302,7 @@
     } else {
       doc = '<head>' + baseTag + '</head>' + doc;
     }
-    const chunk = engineBootstrap(settings, bases) + navHook() + overlayCloseHook();
+    const chunk = engineBootstrap(settings, bases) + navHook();
     if (/<\/body>/i.test(doc)) doc = doc.replace(/<\/body>/i, chunk + '</body>');
     else if (/<\/html>/i.test(doc)) doc = doc.replace(/<\/html>/i, chunk + '</html>');
     else doc = doc + chunk;
@@ -396,11 +376,13 @@
     frame.hidden = true;
     if (errUrl) errUrl.textContent = url;
     errorBox.hidden = false;
+    if (openRealSiteBtn) openRealSiteBtn.hidden = false;
   }
 
   function clearError() {
     errorBox.hidden = true;
     frame.hidden = false;
+    if (openRealSiteBtn) openRealSiteBtn.hidden = true;
   }
 
   function renderInFrame(doc) {
@@ -424,7 +406,6 @@
     setToolsCollapsed(true); // start with the tools hidden
     if (siteHost) siteHost.hidden = false;
     if (viewerCloseBtn) viewerCloseBtn.hidden = false;
-    if (closePopupBtn) closePopupBtn.hidden = false;
   }
 
   function exitViewer() {
@@ -432,7 +413,6 @@
     setToolsCollapsed(false);
     if (siteHost) siteHost.hidden = true;
     if (viewerCloseBtn) viewerCloseBtn.hidden = true;
-    if (closePopupBtn) closePopupBtn.hidden = true;
     if (frame) frame.src = '';
   }
 
@@ -537,10 +517,13 @@
   }
   if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsCollapsed(!toolsCollapsed()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
-  // Close an overlay/popup of the opened site (consent banners, lightboxes…).
-  if (closePopupBtn) closePopupBtn.addEventListener('click', () => {
-    try { frame.contentWindow.postMessage({ t: 'wryCloseOverlay' }, '*'); } catch (e) {}
+  // Fallback for sites that can't be fetched (Weibo, login walls…): open the
+  // real site in a new tab where the browser extension can annotate it.
+  if (openRealSiteBtn) openRealSiteBtn.addEventListener('click', () => {
+    const u = (errUrl && errUrl.textContent) || siteUrl.value;
+    if (u) window.open(u, '_blank', 'noopener');
   });
+  if (openRealSiteBtn) openRealSiteBtn.hidden = true;
 
   // Live re-annotation: the header toggles ARE the extension's popup. Changing
   // one re-applies a clean set of settings to the open page.
@@ -555,7 +538,9 @@
   document.querySelectorAll('input[name="hskMode"]').forEach((r) => r.addEventListener('change', pushSettings));
   document.querySelectorAll('#hskLegend .hsk-color').forEach((sw) => sw.addEventListener('click', pushSettings));
 
-  // Navigation from inside the fetched page (its links post wryNav to us).
+  // Navigation from inside the fetched page: the nav hook posts wryNav to us.
+  // We reload the target through the same mirror pipeline so the site stays
+  // navigable IN the viewer and 王软音 keeps re-annotating each page.
   window.addEventListener('message', (ev) => {
     const d = ev.data;
     if (d && d.t === 'wryNav' && d.u) loadSite(d.u);
