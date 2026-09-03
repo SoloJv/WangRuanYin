@@ -207,6 +207,32 @@
     }, 50);
   }
 
+  let selChangeTimer = null;
+  function maybeShowSelectionPopup() {
+    if (selChangeTimer) clearTimeout(selChangeTimer);
+    selChangeTimer = window.setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection ? selection.toString().trim() : '';
+      if (!selectionEnabled) return;
+      if (!text || !CHINESE_RE.test(text)) { hideTranslationPopup(); return; }
+      let position = { x: (window.innerWidth || 300) / 2, y: (window.innerHeight || 300) / 2 };
+      if (selection && selection.rangeCount > 0) {
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        if (rect.width > 0 || rect.height > 0) {
+          position = { x: rect.left + rect.width / 2, y: rect.bottom + 12 };
+        }
+      }
+      showTranslationPopup(text, position);
+    }, 280);
+  }
+
+  // Touch support: on Android / iOS a long-press fires 'selectionchange'
+  // (not mouseup), so we listen for it to open the translation popup there.
+  function onSelectionChange() {
+    if (!selectionEnabled) return;
+    maybeShowSelectionPopup();
+  }
+
   function showTranslationPopup(text, position) {
     hideTranslationPopup();
     if (!CHINESE_RE.test(text)) return;
@@ -566,9 +592,11 @@
       settings.selection = selectionEnabled;
       if (selectionEnabled) {
         document.addEventListener('mouseup', onSelectionMouseUp);
+        document.addEventListener('selectionchange', onSelectionChange);
         setStatus('Translate selection — select Chinese text on the page.');
       } else {
         document.removeEventListener('mouseup', onSelectionMouseUp);
+        document.removeEventListener('selectionchange', onSelectionChange);
         hideTranslationPopup();
       }
       saveSettings();
@@ -657,6 +685,7 @@
     removeAnnotations();
     removeStandaloneHsk();
     document.removeEventListener('mouseup', onSelectionMouseUp);
+    document.removeEventListener('selectionchange', onSelectionChange);
     if (panel) { panel.remove(); panel = null; }
   }
 
@@ -674,7 +703,10 @@
       wirePanel();
       syncPanel();
     }
-    if (selectionEnabled) document.addEventListener('mouseup', onSelectionMouseUp);
+    if (selectionEnabled) {
+      document.addEventListener('mouseup', onSelectionMouseUp);
+      document.addEventListener('selectionchange', onSelectionChange);
+    }
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
     if (!panelSuppressed) setStatus('王软音 ready — use the toggles above.');
@@ -689,8 +721,13 @@
     removeAnnotations();
     removeStandaloneHsk();
     if (!panelSuppressed) syncPanel();
-    if (selectionEnabled) document.addEventListener('mouseup', onSelectionMouseUp);
-    else document.removeEventListener('mouseup', onSelectionMouseUp);
+    if (selectionEnabled) {
+      document.addEventListener('mouseup', onSelectionMouseUp);
+      document.addEventListener('selectionchange', onSelectionChange);
+    } else {
+      document.removeEventListener('mouseup', onSelectionMouseUp);
+      document.removeEventListener('selectionchange', onSelectionChange);
+    }
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
     if (!panelSuppressed) setStatus('王软音 settings updated.');

@@ -52,11 +52,12 @@ proxies as last resort — rendered in a sandboxed iframe below the toggles, and
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. In the **🌐 Website viewer** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open in this page**.
-3. The site loads and fills the whole page, and pinyin / sentence translations / HSK colours are applied
-   automatically. The annotation controls live in a **collapsible tools panel** (use the **⚙ Tools** button
-   in the header to show/hide it), so the website can take all the space. Changing a toggle re-annotates
-   the page live, and the site is cached in the session so re-opening it is instant. No popup is injected
-   into the page — the app's own controls do everything.
+3. The site loads and fills **the whole page** — the annotation controls live in a small collapsible
+   **tools panel** (⚙ button in the header) that appears as a floating overlay, so hiding it gives the
+   website every pixel. A fetched page that has a consent/lightbox overlay can be cleared with the
+   **╳ Close popup** button in the header. Changing a toggle re-annotates the page instantly, and the
+   site is cached (15 min) so re-opening it is instant. On mobile, tap-and-hold Chinese text to get a
+   translation popup (the **Translate on selection** toggle).
 
 > Why not open the real site in a tab? A plain web page cannot run scripts inside another website's tab
 > (same-origin policy), so fetching and rendering here is the only way the app's features can control the
@@ -173,7 +174,7 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
 - **Website viewer: can't load a site?** The viewer fetches pages through Jina Reader, the Wikimedia CORS API (for Wikipedia articles) and public CORS proxies. Sites that block all of those (or require login, or render only via client-side JS) show an error — try a server-rendered address, or use the browser **extension**, which annotates any page natively.
-- **Website viewer: why does it fetch instead of opening the real site in a tab?** A plain web page cannot run scripts inside another website's tab (same-origin policy), so the app fetches and renders the site in its own page — that's the only way the header toggles can annotate it. This is the same engine the browser extension uses.
+- **Website viewer: there's a popup on the site I can't close?** The site runs in a sandbox (cookies/storage are blocked), so its own "close" scripts may not run. Use the **╳ Close popup** button in the app header — it removes full-screen modal/consent overlays from the fetched page.
 - **Website viewer toggles not remembered?** The floating panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the defaults.
 
 ---

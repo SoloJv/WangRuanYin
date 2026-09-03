@@ -23,13 +23,14 @@
   const toolsPanel = $('toolsPanel');
   const toolsToggle = $('toolsToggle');
   const viewerCloseBtn = $('viewerCloseBtn');
+  const closePopupBtn = $('closePopupBtn');
   const siteHost = $('siteHost');
 
-  // Cached copy of the most recent site (sessionStorage) so re-opening a
-  // website is instant instead of re-fetching the whole page.
+  // Cached copy of the most recent site (persisted in localStorage, session as a
+  // fallback) so re-opening a website is instant instead of re-fetching the page.
   const CACHE_KEY = 'wry_viewer_cache_v1';
-  const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
-  const CACHE_MAX_CHARS = 1200000;  // keep under sessionStorage quota
+  const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+  const CACHE_MAX_CHARS = 1200000;  // keep under storage quota
 
   // Engine files injected into the fetched page, IN THIS ORDER.
   const FILES = [
@@ -64,6 +65,7 @@
   function collectSettings() {
     const pinyin = $('togglePinyin') && $('togglePinyin').checked;
     const translation = $('toggleTranslation') && $('toggleTranslation').checked;
+    const selection = $('toggleSelection') ? $('toggleSelection').checked : true;
     const lang = ($('targetLang') && $('targetLang').value) || 'en';
     let hsk = 'off';
     const checked = document.querySelector('input[name="hskMode"]:checked');
@@ -76,7 +78,7 @@
     return {
       pinyin: pinyin !== false,
       translation: translation !== false,
-      selection: false,
+      selection: selection !== false,
       lang,
       hsk,
       disabled: disabled.sort((a, b) => a - b),
@@ -111,15 +113,15 @@
   //  api.allorigins.win / api.codetabs.com / corsproxy.io — classic public CORS
   //                        proxies, kept as last-resort mirrors (go up/down).
   const SOURCES = [
-    { name: 'jina-raw', label: 'Jina Reader', kind: 'html', build: (u) => 'https://r.jina.ai/' + u, headers: { 'X-Return-Format': 'html', 'Accept': 'text/html' }, timeout: 20000 },
-    { name: 'jina-readable', label: 'Jina Reader (readable)', kind: 'md', build: (u) => 'https://r.jina.ai/' + u, timeout: 25000 },
-    { name: 'wikipedia-api', label: 'Wikimedia API', kind: 'wiki', matches: (u) => /^https?:\/\/([a-z0-9-]+\.)*wikipedia\.org\//i.test(u), build: wikiApiUrlFor, timeout: 12000 },
+    { name: 'jina-raw', label: 'Jina Reader', kind: 'html', build: (u) => 'https://r.jina.ai/' + u, headers: { 'X-Return-Format': 'html', 'Accept': 'text/html' }, timeout: 12000 },
+    { name: 'jina-readable', label: 'Jina Reader (readable)', kind: 'md', build: (u) => 'https://r.jina.ai/' + u, timeout: 15000 },
+    { name: 'wikipedia-api', label: 'Wikimedia API', kind: 'wiki', matches: (u) => /^https?:\/\/([a-z0-9-]+\.)*wikipedia\.org\//i.test(u), build: wikiApiUrlFor, timeout: 8000 },
     { name: 'allorigins', label: 'AllOrigins', kind: 'html', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
     { name: 'allorigins-get', label: 'AllOrigins', kind: 'json', build: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
     { name: 'codetabs', label: 'CodeTabs', kind: 'html', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
     { name: 'corsproxy', label: 'CORSProxy.io', kind: 'html', build: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) }
   ];
-  const FETCH_TIMEOUT = 25000;
+  const FETCH_TIMEOUT = 15000;
 
   function fetchWithTimeout(url, ms, headers) {
     return new Promise((resolve, reject) => {
@@ -213,21 +215,27 @@
 
   // Fetches the page from every usable mirror in parallel and settles on the
   // FIRST usable result (a mirror that already failed/succeeded never blocks the
-  // others). Real-site HTML is preferred: markdown is accepted only once every
-  // HTML source has failed.
-  function fetchPage(url) {
+  // others). The readable-text (markdown) result is returned IMMEDIATELY so the
+  // content appears fast; if a full-HTML mirror finishes shortly after, onUpgrade
+  // fires so the page can be swapped to the real layout.
+  function fetchPage(url, onUpgrade) {
     return new Promise((resolve, reject) => {
       const live = SOURCES.filter((s) => !s.matches || s.matches(url));
       if (live.length === 0) { reject(new Error('No mirror available for ' + url)); return; }
       let settled = 0;
       let bestHtml = null;
       let bestMd = null;
-      const finish = () => {
-        if (bestHtml) { resolve(bestHtml); return; }
-        if (settled >= live.length) {
-          if (bestMd) resolve(bestMd);
-          else reject(new Error('No source returned a usable copy of ' + url));
+      let delivered = null;
+      const settle = () => {
+        if (delivered === 'md' && bestHtml && onUpgrade) {
+          const h = bestHtml; bestHtml = null;
+          onUpgrade(h);
+          return;
         }
+        if (delivered) return;
+        if (bestHtml) { delivered = 'html'; resolve(bestHtml); return; }
+        if (bestMd) { delivered = 'md'; resolve(bestMd); return; }
+        if (settled >= live.length) { delivered = 'done'; reject(new Error('No source returned a usable copy of ' + url)); }
       };
       live.forEach((src) => {
         const ms = src.timeout || FETCH_TIMEOUT;
@@ -243,7 +251,7 @@
             else if (r && r.kind === 'md' && !bestMd) bestMd = r;
           })
           .catch(() => {})
-          .then(() => { settled++; finish(); });
+          .then(() => { settled++; settle(); });
       });
     });
   }
@@ -281,6 +289,30 @@
       'd.addEventListener("click",h,false);})(document);</scr' + 'ipt>';
   }
 
+  // Keeps the app's "Close popup" button working inside the sandboxed page:
+  // listens for a wryCloseOverlay message from the host and also auto-removes
+  // typical modal/consent overlays after a short delay (their own close scripts
+  // often can't run in the sandbox because they need cookies/storage).
+  function overlayCloseHook() {
+    return '<scr' + 'ipt>(function(){' +
+      'var kill=function(){var w=innerWidth,h=innerHeight;' +
+      'var els=document.querySelectorAll("body *");' +
+      'for(var i=0;i<els.length;i++){var el=els[i],s,r,z;' +
+      'try{s=getComputedStyle(el);}catch(e){continue;}' +
+      'if(s.position!=="fixed"&&s.position!=="sticky")continue;' +
+      'try{r=el.getBoundingClientRect();}catch(e){continue;}' +
+      'if(r.width>(w*0.6)&&r.height>(h*0.5)){' +
+      'z=parseInt(s.zIndex,10)||0;' +
+      'if(z>=100||(el.matches&&el.matches("[role=dialog],[aria-modal=true],[class*=modal],[class*=dialog],[class*=overlay],[class*=cookie],[id*=popup]")))){' +
+      'try{el.remove(el.parentNode);}catch(e){}}}}' +
+      'document.documentElement.style.overflow="auto";' +
+      'document.body.style.overflow="auto";};' +
+      'window.addEventListener("message",function(e){var d=e.data;if(d&&d.t==="wryCloseOverlay")kill();});' +
+      'setTimeout(kill,2500);' +
+      'document.addEventListener("click",function(){setTimeout(kill,450);},true);' +
+      '})();</scr' + 'ipt>';
+  }
+
   // Builds the sandboxed document: fetched page + our <base> (so relative
   // images/CSS resolve to the real site) + engine bootstrap + nav hook.
   function buildDocHtml(html, url, settings, bases) {
@@ -291,7 +323,7 @@
     } else {
       doc = '<head>' + baseTag + '</head>' + doc;
     }
-    const chunk = engineBootstrap(settings, bases) + navHook();
+    const chunk = engineBootstrap(settings, bases) + navHook() + overlayCloseHook();
     if (/<\/body>/i.test(doc)) doc = doc.replace(/<\/body>/i, chunk + '</body>');
     else if (/<\/html>/i.test(doc)) doc = doc.replace(/<\/html>/i, chunk + '</html>');
     else doc = doc + chunk;
@@ -380,41 +412,50 @@
   }
 
   // Switches the app to "website viewer": the site fills the whole viewport,
-  // the paste tool hides, the tools panel stays for the toggles.
+  // the paste tool hides, and the tools become a floating overlay.
   function enterViewer() {
     document.body.classList.add('viewing');
+    document.body.classList.remove('tools-open'); // start with the tools hidden
     if (siteHost) siteHost.hidden = false;
     if (viewerCloseBtn) viewerCloseBtn.hidden = false;
+    if (closePopupBtn) closePopupBtn.hidden = false;
   }
 
   function exitViewer() {
     document.body.classList.remove('viewing');
+    document.body.classList.remove('tools-open');
     if (siteHost) siteHost.hidden = true;
     if (viewerCloseBtn) viewerCloseBtn.hidden = true;
+    if (closePopupBtn) closePopupBtn.hidden = true;
     if (frame) frame.src = '';
   }
 
   // Cached copy of the most recent site, so re-opening it is instant.
   function readCache(url) {
-    try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      const o = JSON.parse(raw);
-      if (o && o.url === url && o.t && (Date.now() - o.t) < CACHE_TTL) return o;
-    } catch (e) { /* quota / corrupted */ }
+    const stores = [localStorage, sessionStorage];
+    for (const store of stores) {
+      try {
+        const raw = store.getItem(CACHE_KEY);
+        if (!raw) continue;
+        const o = JSON.parse(raw);
+        if (o && o.url === url && o.t && (Date.now() - o.t) < CACHE_TTL) return o;
+      } catch (e) { /* quota / corrupted — try next store */ }
+    }
     return null;
   }
 
   function writeCache(url, res) {
-    try {
-      const o = {
-        url, t: Date.now(),
-        kind: res.kind, label: res.label, source: res.source,
-        html: res.html || undefined, text: res.text || undefined
-      };
-      const s = JSON.stringify(o);
-      if (s && s.length < CACHE_MAX_CHARS) sessionStorage.setItem(CACHE_KEY, s);
-    } catch (e) { /* quota */ }
+    const o = {
+      url, t: Date.now(),
+      kind: res.kind, label: res.label, source: res.source,
+      html: res.html || undefined, text: res.text || undefined
+    };
+    const s = JSON.stringify(o);
+    if (!s || s.length >= CACHE_MAX_CHARS) return;
+    const stores = [localStorage, sessionStorage];
+    for (let i = 0; i < stores.length; i++) {
+      try { stores[i].setItem(CACHE_KEY, s); break; } catch (e) { /* try next */ }
+    }
   }
 
   function showResult(res, url) {
@@ -431,10 +472,12 @@
     setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 王软音…');
   }
 
+  let renderToken = 0;
   function loadSite(rawUrl) {
     const url = normalizeUrl(rawUrl);
     if (!url) { setStatus('Enter an address.'); if (siteUrl) siteUrl.focus(); return; }
     if (siteUrl) siteUrl.value = url;
+    const token = ++renderToken;
     clearError();
     loadBox.hidden = false;
     frame.hidden = true;
@@ -444,17 +487,25 @@
     const cached = readCache(url);
     if (cached) {
       const c = { kind: cached.kind, label: cached.label || 'cached copy', source: cached.source || 'cache', html: cached.html, text: cached.text };
-      setStatus('Loaded from cache — applying 王软音…');
+      setStatus('Loaded a cached copy — applying 王软音…');
       showResult(c, url);
       return;
     }
 
-    fetchPage(url)
+    // The markdown may arrive first (instant); when a full-HTML mirror finishes
+    // a moment later we seamlessly upgrade the page to the real layout.
+    fetchPage(url, (htmlRes) => {
+      if (token !== renderToken) return; // user navigated elsewhere meanwhile
+      writeCache(url, htmlRes);
+      showResult(htmlRes, url);
+    })
       .then((res) => {
+        if (token !== renderToken) return;
         writeCache(url, res);
         showResult(res, url);
       })
       .catch((err) => {
+        if (token !== renderToken) return;
         showError(url);
         console.warn('Wangruanyin viewer:', err);
       });
@@ -464,19 +515,28 @@
   if (openBtn) openBtn.addEventListener('click', () => loadSite(siteUrl.value));
   if (siteUrl) siteUrl.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadSite(siteUrl.value); });
 
-  // Collapsible tools — hide/show the annotation toggles so the website takes all the space.
-  function setToolsCollapsed(collapsed) {
-    if (toolsPanel) toolsPanel.classList.toggle('collapsed', collapsed);
+  // Tools visibility: in the app the panel collapses; in the viewer it becomes
+  // a floating overlay so the website keeps ALL the space when hidden.
+  function setToolsVisible(visible) {
+    if (toolsPanel) toolsPanel.classList.toggle('collapsed', !visible);
+    if (document.body.classList.contains('viewing')) {
+      document.body.classList.toggle('tools-open', !!visible);
+    }
     if (toolsToggle) {
-      toolsToggle.setAttribute('aria-expanded', String(!collapsed));
-      toolsToggle.textContent = collapsed ? '⚙ Show tools ▴' : '⚙ Hide tools ▾';
+      toolsToggle.setAttribute('aria-expanded', String(!!visible));
+      toolsToggle.textContent = visible ? '⚙ Hide tools ▵' : '⚙ Show tools ▴';
     }
   }
-  if (toolsToggle) toolsToggle.addEventListener('click', () => {
-    const collapsed = toolsPanel ? !toolsPanel.classList.contains('collapsed') : false;
-    setToolsCollapsed(collapsed);
-  });
+  function toolsAreVisible() {
+    if (document.body.classList.contains('viewing')) return document.body.classList.contains('tools-open');
+    return toolsPanel ? !toolsPanel.classList.contains('collapsed') : false;
+  }
+  if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsVisible(!toolsAreVisible()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
+  // Close an overlay/popup of the opened site (consent banners, lightboxes…).
+  if (closePopupBtn) closePopupBtn.addEventListener('click', () => {
+    try { frame.contentWindow.postMessage({ t: 'wryCloseOverlay' }, '*'); } catch (e) {}
+  });
 
   // Live re-annotation: the header toggles ARE the extension's popup. Changing
   // one re-applies a clean set of settings to the open page.
@@ -484,7 +544,7 @@
     if (!frame || !frame.contentWindow) return;
     try { frame.contentWindow.postMessage({ t: 'wrySettings', s: collectSettings() }, '*'); } catch (e) {}
   }
-  ['togglePinyin', 'toggleTranslation', 'targetLang'].forEach((id) => {
+  ['togglePinyin', 'toggleTranslation', 'toggleSelection', 'targetLang'].forEach((id) => {
     const el = $(id);
     if (el) el.addEventListener('change', pushSettings);
   });

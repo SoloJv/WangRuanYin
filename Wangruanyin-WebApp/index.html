@@ -19,6 +19,7 @@
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — open a website here">
       <button type="button" id="openSiteBtn" class="btn-open">Open website</button>
       <button type="button" id="toolsToggle" class="clear-btn header-btn" aria-expanded="true" title="Show or hide the annotation tools">⚙ Hide tools ▴</button>
+      <button type="button" id="closePopupBtn" class="clear-btn header-btn" hidden title="Try to close an overlay / popup of the opened website">╳ Close popup</button>
     </div>
     <p id="browseStatus" class="browse-status" hidden></p>
   </header>
@@ -41,6 +42,15 @@
         <span class="slider"></span>
       </label>
       <span class="hint">One translation row under each sentence (Google, needs internet)</span>
+    </div>
+
+    <div class="control-group">
+      <span class="toggle-label">Translate on selection</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleSelection" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="hint">Select any Chinese text in the website (tap-and-hold on mobile) to get an instant translation popup</span>
     </div>
 
     <div class="control-group lang-group">
@@ -105,7 +115,7 @@
 
   <div id="siteHost" class="site-host" hidden>
     <div id="loadBox" class="load-box" hidden><span class="spinner"></span>Fetching the website and applying 王软音…</div>
-    <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads"
+    <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock"
             hidden title="Website opened in this page with 王软音 annotations"></iframe>
     <div id="siteError" class="site-error" hidden>
       <h3>Could not load this website</h3>
