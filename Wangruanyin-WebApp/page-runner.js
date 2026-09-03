@@ -34,7 +34,7 @@
 
   // Per-site persistence — like the extension's chrome.storage: toggles changed
   // in the floating panel are remembered for that website in the site's own
-  // localStorage and re-applied the next time the bookmarklet is clicked.
+  // localStorage and re-applied the next time 王软音 is applied on that site.
   let defaultSettings = null;
   const SITE_KEY_PREFIX = 'wry_site_settings_';
 

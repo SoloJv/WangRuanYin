@@ -22,7 +22,7 @@ All forms share the same features: pinyin under every Chinese character, a whole
 
 ## Web app (recommended for standalone use)
 
-The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No installation, no server — just open it (for **website mode** a simple local HTTP server is needed, see below).
+The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No installation, no server — just open it (for the **website viewer** a simple local HTTP server is needed, see below).
 
 ### Install / run
 

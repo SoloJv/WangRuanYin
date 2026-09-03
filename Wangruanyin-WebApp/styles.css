@@ -253,7 +253,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   .controls { padding: 12px; }
 }
 
-/* ===== Website mode card ===== */
+/* ===== Website viewer card ===== */
 .browse-card { max-width: 1080px; margin: 12px auto; }
 .browse-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .browse-head h2 { margin: 0; font-size: 16px; color: #2a5d97; }
