@@ -458,6 +458,10 @@
 
   // --- floating panel ---------------------------------------------------------
   let panel = null;
+  // When the hosting app drives everything through its own header toggles
+  // (settings.panel === false), the floating panel is not injected into the
+  // fetched page — the page is still auto-annotated, just without the popup.
+  let panelSuppressed = false;
 
   function setStatus(msg) {
     if (!panel) return;
@@ -640,6 +644,9 @@
       ? settings.disabled.filter((n) => typeof n === 'number' && n >= 1 && n <= 9)
       : [];
     hskHighlight = settings.hskHighlight === true;
+    // Only flip suppression when the host explicitly asked for it — saved
+    // per-site toggles (no panel key) must not silently re-enable the popup.
+    if (typeof s.panel === 'boolean') panelSuppressed = s.panel === false;
     setHskState();
   }
 
@@ -661,13 +668,16 @@
     applySettings(defaultSettings);
     const saved = loadSavedSettings();
     if (saved) applySettings(saved); // per-site toggles win over the bookmark defaults
-    buildPanel();
-    wirePanel();
-    syncPanel();
+    panelSuppressed = defaultSettings.panel === false; // the host hides the popup
+    if (!panelSuppressed) {
+      buildPanel();
+      wirePanel();
+      syncPanel();
+    }
     if (selectionEnabled) document.addEventListener('mouseup', onSelectionMouseUp);
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
-    setStatus('王软音 ready — use the toggles above.');
+    if (!panelSuppressed) setStatus('王软音 ready — use the toggles above.');
   }
 
   // Live re-annotation driven by the host page's header toggles (the website
@@ -678,12 +688,12 @@
     applySettings(s || defaultSettings || settings);
     removeAnnotations();
     removeStandaloneHsk();
-    syncPanel();
+    if (!panelSuppressed) syncPanel();
     if (selectionEnabled) document.addEventListener('mouseup', onSelectionMouseUp);
     else document.removeEventListener('mouseup', onSelectionMouseUp);
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
-    setStatus('王软音 settings updated.');
+    if (!panelSuppressed) setStatus('王软音 settings updated.');
   }
 
   window.WryPageRunner = { init, cleanup, applySettings, setSettings };

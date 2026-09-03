@@ -52,9 +52,11 @@ proxies as last resort — rendered in a sandboxed iframe below the toggles, and
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. In the **🌐 Website viewer** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open in this page**.
-3. The site loads right here, and pinyin / sentence translations / HSK colours are applied automatically.
-   The header toggles act like the extension's popup: change any toggle and the page re-annotates live.
-   Internal links navigate inside the viewer.
+3. The site loads and fills the whole page, and pinyin / sentence translations / HSK colours are applied
+   automatically. The annotation controls live in a **collapsible tools panel** (use the **⚙ Tools** button
+   in the header to show/hide it), so the website can take all the space. Changing a toggle re-annotates
+   the page live, and the site is cached in the session so re-opening it is instant. No popup is injected
+   into the page — the app's own controls do everything.
 
 > Why not open the real site in a tab? A plain web page cannot run scripts inside another website's tab
 > (same-origin policy), so fetching and rendering here is the only way the app's features can control the

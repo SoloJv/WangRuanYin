@@ -9,11 +9,21 @@
 <body>
 
   <header class="app-header">
-    <div class="app-title">
-      <h1>王软音 · Wangruanyin</h1>
+    <div class="header-top">
+      <div class="app-title">
+        <h1>王软音 · Wangruanyin</h1>
+      </div>
+      <button type="button" id="viewerCloseBtn" class="clear-btn header-btn" hidden title="Close the website and return to the text tool">✕ Close site</button>
     </div>
+    <div class="header-open">
+      <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — open a website here">
+      <button type="button" id="openSiteBtn" class="btn-open">Open website</button>
+      <button type="button" id="toolsToggle" class="clear-btn header-btn" aria-expanded="true" title="Show or hide the annotation tools">⚙ Hide tools ▴</button>
+    </div>
+    <p id="browseStatus" class="browse-status" hidden></p>
   </header>
 
+  <div id="toolsPanel" class="tools-panel">
   <section class="controls card">
     <div class="control-group">
       <span class="toggle-label">Pinyin annotations</span>
@@ -91,22 +101,9 @@
       <span class="hint">Reads every annotated sentence aloud with the Chinese browser voice</span>
     </div>
   </section>
+  </div>
 
-  <section class="card browse-card">
-    <div class="browse-head">
-      <h2>🌐 Website viewer <span class="tag">open any website here in this page — with the toggles above</span></h2>
-    </div>
-    <p class="browse-desc">
-      Type a website and click <strong>Open in this page</strong> — it opens <strong>right here</strong>, no new
-      tab. The page is fetched through a reader service (Jina Reader), Wikipedia's own CORS API and public
-      proxies, then annotated here with the toggles above — change a toggle and the page re-annotates live,
-      exactly like the extension's popup. Sites that need login or render only with JavaScript can't be fetched.
-    </p>
-    <div class="browse-row">
-      <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — the website you want to open here">
-      <button type="button" id="openSiteBtn" class="btn-open">Open in this page</button>
-    </div>
-    <p id="browseStatus" class="browse-status" hidden></p>
+  <div id="siteHost" class="site-host" hidden>
     <div id="loadBox" class="load-box" hidden><span class="spinner"></span>Fetching the website and applying 王软音…</div>
     <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads"
             hidden title="Website opened in this page with 王软音 annotations"></iframe>
@@ -118,9 +115,9 @@
       that render only with client-side JavaScript.</p>
       <p>Try a server-rendered address — Wikipedia, news and blogs work well.</p>
     </div>
-  </section>
+  </div>
 
-  <main class="workspace">
+  <main id="pasteWorkspace" class="workspace">
     <section class="pane input-pane card">
       <div class="pane-head">
         <h2>Chinese text</h2>

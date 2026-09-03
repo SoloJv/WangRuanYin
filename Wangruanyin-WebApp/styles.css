@@ -17,16 +17,45 @@ body {
   font-family: Arial, sans-serif;
   color: var(--ink);
   line-height: 1.5;
+  display: flex;
+  flex-direction: column;
 }
+/* While a website is open in the viewer it fills the whole viewport (no scroll). */
+body.viewing { overflow: hidden; }
+body.viewing #pasteWorkspace { display: none !important; }
 
-/* Header */
+/* Header — slim, always visible; the URL open + tools toggle live here */
 .app-header {
+  flex: 0 0 auto;
   background: linear-gradient(120deg, #1f5fa6, #2e8bcb 55%, #4CAF50);
   color: #fff;
-  padding: 16px 28px;
+  padding: 8px 16px 10px;
 }
+.header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .app-title { display: flex; align-items: center; gap: 14px; }
-.app-title h1 { font-size: 21px; margin: 0; }
+.app-title h1 { font-size: 18px; margin: 0; }
+.header-btn {
+  border: 1px solid rgba(255, 255, 255, .6);
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.header-btn:hover { background: rgba(255, 255, 255, .3); }
+.header-open { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.header-open input[type="text"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.app-header .browse-status { margin: 6px 2px 0; font-size: 12px; color: #eaffea; }
 
 /* Cards + workspace */
 .card {
@@ -35,18 +64,22 @@ body {
   border-radius: 10px;
   padding: 12px 16px;
 }
-.controls {
-  margin: 14px auto 10px;
-  max-width: 1080px;
+/* Tools panel — the annotation toggles, collapsible so the site gets all the space */
+.tools-panel {
+  flex: 0 0 auto;
+  overflow: hidden;
+  max-height: 700px;
+  transition: max-height .3s ease;
+  background: #f2f3f5;
+}
+.tools-panel.collapsed { max-height: 0; }
+.tools-panel .controls {
+  margin: 8px 12px;
+  max-width: none;
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
   align-items: center;
-  /* The features stay visible as the app header while the website viewer scrolls. */
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
 .control-group { display: inline-flex; flex-direction: column; gap: 4px; }
 .toggle-label { font-size: 13px; color: #333; font-weight: 600; }
@@ -117,6 +150,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 /* Workspace panes */
 .workspace {
+  flex: 0 0 auto;
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
   display: grid;
@@ -253,23 +288,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   .controls { padding: 12px; }
 }
 
-/* ===== Website viewer card ===== */
-.browse-card { max-width: 1080px; margin: 12px auto; }
-.browse-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.browse-head h2 { margin: 0; font-size: 16px; color: #2a5d97; }
-.browse-head .tag { font-size: 12px; color: var(--muted); }
-.browse-desc { font-size: 13px; margin: 8px 0 12px; line-height: 1.6; }
-.browse-desc code, .browse-warning code { background: #eef1f5; border-radius: 4px; padding: 1px 5px; }
-.browse-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
-.browse-row > input[type="text"] {
-  flex: 1;
-  min-width: 260px;
-  padding: 9px 12px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-.browse-row .clear-btn { padding: 9px 14px; }
+/* ===== Website viewer (fills the viewport when open) ===== */
 .browse-status { font-size: 12px; color: var(--on); font-weight: 600; }
 .btn-open {
   font-weight: bold;
@@ -277,24 +296,33 @@ input:checked + .slider:before { transform: translateX(20px); }
   background: #4CAF50;
   border: 1px solid #3d9142;
   border-radius: 8px;
-  padding: 10px 18px;
+  padding: 8px 16px;
   font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .btn-open:hover { background: #3d9142; }
 
-/* In-page website viewer (open a site right here in the page) */
-.load-box {
+.site-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 12px;
+  overflow: hidden;
+}
+.site-host[hidden] { display: none; }
+.site-host .load-box {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   color: #244d7d;
   font-size: 14px;
-  padding: 22px;
 }
-.spinner {
-  width: 18px; height: 18px; flex-shrink: 0;
+.site-host .spinner {
+  width: 20px; height: 20px; flex-shrink: 0;
   border: 3px solid #cfe0f1;
   border-top-color: #244d7d;
   border-radius: 50%;
@@ -302,21 +330,24 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 @keyframes wryspin { to { transform: rotate(360deg); } }
 #siteFrame {
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  height: 62vh;
-  min-height: 360px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
 }
-.site-error {
-  padding: 18px 20px;
+.site-host .site-error {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 20px 22px;
   color: #444;
   border: 1px solid #f0c8c8;
   background: #fdf3f3;
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.6;
+  overflow: auto;
 }
-.site-error h3 { color: #a33; margin: 0 0 8px; }
-.site-error code { background: #f6e6e6; border-radius: 4px; padding: 1px 5px; }
+.site-host .site-error h3 { color: #a33; margin: 0 0 8px; }
+.site-host .site-error code { background: #f6e6e6; border-radius: 4px; padding: 1px 5px; }

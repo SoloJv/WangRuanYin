@@ -20,6 +20,16 @@
   const frame = $('siteFrame');
   const errorBox = $('siteError');
   const errUrl = $('errUrl');
+  const toolsPanel = $('toolsPanel');
+  const toolsToggle = $('toolsToggle');
+  const viewerCloseBtn = $('viewerCloseBtn');
+  const siteHost = $('siteHost');
+
+  // Cached copy of the most recent site (sessionStorage) so re-opening a
+  // website is instant instead of re-fetching the whole page.
+  const CACHE_KEY = 'wry_viewer_cache_v1';
+  const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+  const CACHE_MAX_CHARS = 1200000;  // keep under sessionStorage quota
 
   // Engine files injected into the fetched page, IN THIS ORDER.
   const FILES = [
@@ -70,7 +80,8 @@
       lang,
       hsk,
       disabled: disabled.sort((a, b) => a - b),
-      hskHighlight: false
+      hskHighlight: false,
+      panel: false // the web app's header toggles are the panel — don't inject the floating popup
     };
   }
 
@@ -100,15 +111,15 @@
   //  api.allorigins.win / api.codetabs.com / corsproxy.io — classic public CORS
   //                        proxies, kept as last-resort mirrors (go up/down).
   const SOURCES = [
-    { name: 'jina-raw', label: 'Jina Reader', kind: 'html', build: (u) => 'https://r.jina.ai/' + u, headers: { 'X-Return-Format': 'html', 'Accept': 'text/html' }, timeout: 30000 },
-    { name: 'jina-readable', label: 'Jina Reader (readable)', kind: 'md', build: (u) => 'https://r.jina.ai/' + u, timeout: 40000 },
-    { name: 'wikipedia-api', label: 'Wikimedia API', kind: 'wiki', matches: (u) => /^https?:\/\/([a-z0-9-]+\.)*wikipedia\.org\//i.test(u), build: wikiApiUrlFor, timeout: 20000 },
+    { name: 'jina-raw', label: 'Jina Reader', kind: 'html', build: (u) => 'https://r.jina.ai/' + u, headers: { 'X-Return-Format': 'html', 'Accept': 'text/html' }, timeout: 20000 },
+    { name: 'jina-readable', label: 'Jina Reader (readable)', kind: 'md', build: (u) => 'https://r.jina.ai/' + u, timeout: 25000 },
+    { name: 'wikipedia-api', label: 'Wikimedia API', kind: 'wiki', matches: (u) => /^https?:\/\/([a-z0-9-]+\.)*wikipedia\.org\//i.test(u), build: wikiApiUrlFor, timeout: 12000 },
     { name: 'allorigins', label: 'AllOrigins', kind: 'html', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
     { name: 'allorigins-get', label: 'AllOrigins', kind: 'json', build: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
     { name: 'codetabs', label: 'CodeTabs', kind: 'html', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
     { name: 'corsproxy', label: 'CORSProxy.io', kind: 'html', build: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) }
   ];
-  const FETCH_TIMEOUT = 45000;
+  const FETCH_TIMEOUT = 25000;
 
   function fetchWithTimeout(url, ms, headers) {
     return new Promise((resolve, reject) => {
@@ -368,6 +379,58 @@
     clearError();
   }
 
+  // Switches the app to "website viewer": the site fills the whole viewport,
+  // the paste tool hides, the tools panel stays for the toggles.
+  function enterViewer() {
+    document.body.classList.add('viewing');
+    if (siteHost) siteHost.hidden = false;
+    if (viewerCloseBtn) viewerCloseBtn.hidden = false;
+  }
+
+  function exitViewer() {
+    document.body.classList.remove('viewing');
+    if (siteHost) siteHost.hidden = true;
+    if (viewerCloseBtn) viewerCloseBtn.hidden = true;
+    if (frame) frame.src = '';
+  }
+
+  // Cached copy of the most recent site, so re-opening it is instant.
+  function readCache(url) {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (o && o.url === url && o.t && (Date.now() - o.t) < CACHE_TTL) return o;
+    } catch (e) { /* quota / corrupted */ }
+    return null;
+  }
+
+  function writeCache(url, res) {
+    try {
+      const o = {
+        url, t: Date.now(),
+        kind: res.kind, label: res.label, source: res.source,
+        html: res.html || undefined, text: res.text || undefined
+      };
+      const s = JSON.stringify(o);
+      if (s && s.length < CACHE_MAX_CHARS) sessionStorage.setItem(CACHE_KEY, s);
+    } catch (e) { /* quota */ }
+  }
+
+  function showResult(res, url) {
+    const settings = collectSettings();
+    const bases = candidateBases();
+    const doc = res.kind === 'md'
+      ? buildArticleDoc(res.text, url, settings, bases)
+      : buildDocHtml(res.html, url, settings, bases);
+    renderInFrame(doc);
+    frame.onload = () => {
+      try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
+      setStatus('王软音 applied — change the toggles in the app header to re-annotate live.');
+    };
+    setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 王软音…');
+  }
+
   function loadSite(rawUrl) {
     const url = normalizeUrl(rawUrl);
     if (!url) { setStatus('Enter an address.'); if (siteUrl) siteUrl.focus(); return; }
@@ -375,22 +438,21 @@
     clearError();
     loadBox.hidden = false;
     frame.hidden = true;
+    enterViewer();
     setStatus('Starting…');
 
-    const settings = collectSettings();
-    const bases = candidateBases();
+    const cached = readCache(url);
+    if (cached) {
+      const c = { kind: cached.kind, label: cached.label || 'cached copy', source: cached.source || 'cache', html: cached.html, text: cached.text };
+      setStatus('Loaded from cache — applying 王软音…');
+      showResult(c, url);
+      return;
+    }
 
     fetchPage(url)
       .then((res) => {
-        const doc = res.kind === 'md'
-          ? buildArticleDoc(res.text, url, settings, bases)
-          : buildDocHtml(res.html, url, settings, bases);
-        renderInFrame(doc);
-        frame.onload = () => {
-          try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
-          setStatus('王软音 applied — change the toggles above to re-annotate live.');
-        };
-        setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 王软音…');
+        writeCache(url, res);
+        showResult(res, url);
       })
       .catch((err) => {
         showError(url);
@@ -401,6 +463,20 @@
   // --- events ------------------------------------------------------------------
   if (openBtn) openBtn.addEventListener('click', () => loadSite(siteUrl.value));
   if (siteUrl) siteUrl.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadSite(siteUrl.value); });
+
+  // Collapsible tools — hide/show the annotation toggles so the website takes all the space.
+  function setToolsCollapsed(collapsed) {
+    if (toolsPanel) toolsPanel.classList.toggle('collapsed', collapsed);
+    if (toolsToggle) {
+      toolsToggle.setAttribute('aria-expanded', String(!collapsed));
+      toolsToggle.textContent = collapsed ? '⚙ Show tools ▴' : '⚙ Hide tools ▾';
+    }
+  }
+  if (toolsToggle) toolsToggle.addEventListener('click', () => {
+    const collapsed = toolsPanel ? !toolsPanel.classList.contains('collapsed') : false;
+    setToolsCollapsed(collapsed);
+  });
+  if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
 
   // Live re-annotation: the header toggles ARE the extension's popup. Changing
   // one re-applies a clean set of settings to the open page.
