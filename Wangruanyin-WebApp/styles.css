@@ -26,13 +26,6 @@ body {
   padding: 16px 28px;
 }
 .app-title { display: flex; align-items: center; gap: 14px; }
-.app-logo {
-  width: 46px; height: 46px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
-  font-size: 26px; font-weight: bold; color: #fff;
-}
 .app-title h1 { font-size: 21px; margin: 0; }
 .app-title .tagline { margin: 2px 0 0; font-size: 13px; opacity: .9; }
 
@@ -317,15 +310,14 @@ input:checked + .slider:before { transform: translateX(20px); }
   cursor: pointer;
 }
 .btn-open:hover { background: #3d9142; }
-.advanced {
-  margin-top: 10px;
-  padding: 10px 12px;
+.bookmark-apply {
+  margin-top: 12px;
+  padding: 12px 14px;
   background: #f7f9fb;
   border: 1px solid #dde3ea;
   border-radius: 8px;
 }
-.advanced summary { cursor: pointer; font-size: 13px; color: #244d7d; font-weight: 600; }
-.advanced .browse-row { margin: 10px 0 6px; }
+.bookmark-apply .browse-row { margin: 10px 0 6px; }
 .probe-summary { font-size: 12.5px; font-weight: 600; color: #244d7d; margin-bottom: 6px; }
 .browse-probe {
   display: flex;

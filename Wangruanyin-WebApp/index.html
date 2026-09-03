@@ -10,7 +10,6 @@
 
   <header class="app-header">
     <div class="app-title">
-      <span class="app-logo">软</span>
       <div>
         <h1>王软音 · Wangruanyin</h1>
         <p class="tagline">Pinyin annotations, translations &amp; HSK colour coding — web app edition.</p>
@@ -98,30 +97,27 @@
 
   <section class="card browse-card">
     <div class="browse-head">
-      <h2>🌐 Website mode <span class="tag">apply 王软音 to any website, automatically</span></h2>
+      <h2>🌐 Website mode <span class="tag">the real website — annotated like the extension</span></h2>
     </div>
     <p class="browse-desc">
-      Type a website and click <strong>Open with 王软音</strong> — it opens in a new tab of this web app,
-      the page is fetched automatically through <strong>Jina Reader</strong> (a service that re-hosts any
-      page server-side and returns its real HTML), <strong>Wikipedia's own CORS API</strong> for articles,
-      plus public CORS proxies, and rendered there with pinyin, translations &amp; HSK colours applied
-      <strong>automatically</strong> (a floating panel lets you adjust the toggles on the page, just like
-      the browser extension). Your toggles and HSK choices from above are used automatically. If fetching
-      the raw page fails, the app falls back to a clean <strong>readable render</strong> of the same content.
+      Type a website and click <strong>Open with 王软音</strong>: the <strong>actual website</strong> opens
+      in a new tab — the web app does <strong>not fetch or re-render</strong> it. Just like the browser
+      extension, the 王软音 engine runs directly on that page: click the <strong>王软音 · Wangruanyin</strong>
+      link below on the opened tab (drag it to your bookmarks bar once) and the floating panel appears with
+      pinyin, sentence translations &amp; HSK colours. Toggle the panel's buttons and the page updates
+      instantly, exactly as the extension does. Your toggles and HSK choices here are baked into the link.
     </p>
     <div class="browse-row">
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — the website you want to visit">
       <button type="button" id="openSiteBtn" class="btn-open">Open with 王软音</button>
-      <button type="button" id="openPlainBtn" class="clear-btn" title="Open the real website in a normal tab">Open real site</button>
     </div>
     <p id="browseStatus" class="browse-status" hidden></p>
 
-    <details class="advanced">
-      <summary>Advanced — bookmarklet for sites the reader can't fetch (login walls, heavy JavaScript)</summary>
+    <div class="bookmark-apply">
       <p class="browse-desc">
-        Some websites can't be fetched into the reader (login-required, IP-blocked to proxies, or only
-        client-side rendered). For those, drag the <strong>王软音</strong> link to your bookmarks bar,
-        open the real site, and click the bookmark — the floating panel appears on the page itself.
+        <strong>Apply 王软音 to any open website</strong> (one-time setup): drag this link to your
+        bookmarks bar, open the website, then click the bookmark — the floating panel appears on the
+        page itself, with the same toggles as the extension.
       </p>
       <div class="browse-row bookmark-row">
         <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#">王软音 · Wangruanyin</a>
@@ -130,14 +126,14 @@
       <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
       <div id="browseProbe" class="browse-probe" aria-live="polite"></div>
       <p id="browseFileWarning" class="browse-warning" hidden>
-        ⚠️ You opened the app from disk (<code>file://</code>). The reader and bookmarklet load the engine
-        from the published GitHub bases (<code>https://solojv.github.io/WangRuanYin/</code> and the jsDelivr CDN).
+        ⚠️ You opened the app from disk (<code>file://</code>). The bookmarklet loads the engine from the
+        published GitHub bases (<code>https://solojv.github.io/WangRuanYin/</code> and the jsDelivr CDN).
       </p>
       <p class="hint">
-        The toggles above are used automatically by the reader and are also baked into this bookmarklet —
-        change them here and the link updates. Addresses without a protocol get <code>https://</code> added.
+        The toggles above are baked into this link — change them here and it updates. Addresses without a
+        protocol get <code>https://</code> added.
       </p>
-    </details>
+    </div>
   </section>
 
   <main class="workspace">

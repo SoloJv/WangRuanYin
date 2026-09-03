@@ -3,115 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>王软音 · Wangruanyin — Reader</title>
+  <title>王软音 · Wangruanyin — Opening…</title>
   <style>
     html, body { height: 100%; margin: 0; }
-    body { display: flex; flex-direction: column; font-family: Arial, sans-serif; background: #eef1f5; }
-    #toolbar {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: #fbfcfe;
-      border-bottom: 1px solid #ccd4de;
+    body {
+      display: flex; align-items: center; justify-content: center;
+      font-family: Arial, sans-serif; background: #eef1f5; color: #244d7d;
     }
-    #toolbar .tb-btn {
-      border: 1px solid #c2cad4;
-      background: #f4f7fb;
-      color: #244d7d;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    #toolbar .tb-btn:hover:not(:disabled) { background: #e6edf7; }
-    #toolbar .tb-btn:disabled { opacity: .5; cursor: default; }
-    #addrBar {
-      flex: 1;
-      min-width: 120px;
-      padding: 7px 10px;
-      font-size: 13px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    #status {
-      flex: 0 0 auto;
-      font-size: 12px;
-      color: #666;
-      padding: 0 4px;
-      max-width: 380px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #siteFrame {
-      flex: 1 1 auto;
-      width: 100%;
-      border: none;
-      background: #fff;
-    }
-    #loadBox {
-      flex: 1 1 auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      color: #244d7d;
-    }
+    .open-box { text-align: center; font-size: 15px; max-width: 560px; padding: 0 20px; line-height: 1.6; }
     .spinner {
-      display: inline-block;
-      width: 18px; height: 18px;
-      border: 3px solid #cfe0f1;
-      border-top-color: #244d7d;
-      border-radius: 50%;
+      display: inline-block; width: 18px; height: 18px; margin-right: 10px; vertical-align: -4px;
+      border: 3px solid #cfe0f1; border-top-color: #244d7d; border-radius: 50%;
       animation: wryspin .8s linear infinite;
-      margin-right: 10px;
-      vertical-align: -4px;
     }
     @keyframes wryspin { to { transform: rotate(360deg); } }
-    #errorBox {
-      flex: 1 1 auto;
-      padding: 30px;
-      max-width: 640px;
-      margin: 0 auto;
-      color: #333;
-      line-height: 1.6;
-    }
-    #errorBox h2 { color: #a33; }
-    #errorBox code { background: #eef1f5; border-radius: 4px; padding: 1px 5px; }
-    .home-link { color: #1f5fa6; }
+    a { color: #1f5fa6; }
   </style>
 </head>
 <body>
-  <div id="toolbar">
-    <button type="button" id="backBtn" class="tb-btn" title="Back">← Back</button>
-    <input id="addrBar" type="text" spellcheck="false" placeholder="https://…">
-    <button type="button" id="goBtn" class="tb-btn" title="Load this address">↻ Go</button>
-    <button type="button" id="realBtn" class="tb-btn" title="Open the real website in a new tab">↗ Real site</button>
-    <button type="button" id="closeBtn" class="tb-btn" title="Close this tab">✕</button>
-    <span id="status"></span>
+  <div class="open-box">
+    <div id="msg"><span class="spinner"></span>Opening the website in this tab…</div>
+    <p style="font-size:13px;color:#666;">The real site loads directly — the web app never fetches or re-renders it.
+      To annotate it like the extension, click the <strong>王软音 · Wangruanyin</strong> bookmarklet (from the web app)
+      on that page.</p>
+    <p style="font-size:13px;"><a id="openLink" href="#">Open manually</a></p>
   </div>
-
-  <div id="loadBox"><span class="spinner"></span>Fetching the website and applying 王软音…</div>
-  <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads"
-          hidden aria-label="Website rendered with Wangruanyin annotations"></iframe>
-
-  <div id="errorBox" hidden>
-    <h2>Could not load this website</h2>
-    <p>王软音 tried several mirrors (Jina Reader, the Wikimedia CORS API and public CORS
-    proxies) to fetch <code id="errUrl"></code>, but none returned a usable copy.
-    Causes are usually login-required pages, sites that block readers/proxies, or apps
-    that render only with client-side JavaScript.</p>
-    <p>Options:</p>
-    <ul>
-      <li>Click <strong>↗ Real site</strong> on the top bar to open the actual website in a new tab, then use the
-        <strong>Advanced bookmarklet</strong> from the app to annotate it there.</li>
-      <li>Or go back to the <a class="home-link" id="homeLink" href="index.html">web app</a> and try another
-        (server-rendered) address — Wikipedia, news and blogs work well.</li>
-    </ul>
-  </div>
-
-  <script src="reader.js"></script>
+  <script>
+    (function () {
+      var url = new URLSearchParams(location.search).get('url') || '';
+      var link = document.getElementById('openLink');
+      var msg = document.getElementById('msg');
+      if (!url) {
+        msg.innerHTML = 'No address given.';
+        link.href = 'index.html';
+        link.textContent = 'Back to the web app';
+      } else {
+        link.href = url;
+        location.replace(url);
+      }
+    })();
+  </script>
 </body>
 </html>

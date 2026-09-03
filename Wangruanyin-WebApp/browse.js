@@ -1,21 +1,18 @@
 // browse.js — Wangruanyin "website mode".
 //
-// PRIMARY flow: type a website → click "Open with 王软音". A new tab of THIS
-// web app opens (reader.html?url=…): the reader fetches the site through
-// several mirrors (Jina Reader, the Wikimedia CORS API, public CORS proxies),
-// renders it in a sandboxed iframe and injects the Wangruanyin engine,
-// so pinyin / translations / HSK are applied on that page AUTOMATICALLY.
-//
-// ADVANCED flow (for sites the reader can't fetch — login walls, heavy JS):
-// the index also generates a bookmarklet that loads the engine straight into
-// the real site's tab. It is tucked under "Advanced" because it's rarely needed.
+// The web app does NOT fetch or re-render other websites — a plain web page
+// cannot run scripts inside another site's tab (same-origin policy). Instead it
+// works just like the browser extension, but on the REAL page:
+//  "Open with 王软音" opens the actual website in a new tab,
+//  the bookmarklet link injects the Wangruanyin engine straight into that page
+//  (floating panel + toggles — pinyin, translations, HSK — exactly like the
+//  extension's content script).
 (() => {
   'use strict';
 
   const $ = (id) => document.getElementById(id);
   const siteUrl = $('siteUrl');
   const openBtn = $('openSiteBtn');
-  const openPlainBtn = $('openPlainBtn');
   const bmLink = $('bookmarkletLink');
   const bmCode = $('bookmarkletCode');
   const copyBtn = $('copyBookmarkletBtn');
@@ -91,32 +88,24 @@
     }, 6000);
   }
 
-  // --- PRIMARY: open the site with 王软音 applied automatically ----------------
+  // --- PRIMARY: open the REAL website in a new tab ------------------------------
+  // No fetching, proxying or re-rendering: the actual site opens. The 王软音
+  // engine is applied on that page with the bookmarklet link below — the
+  // web-app equivalent of the extension's content script.
   openBtn.addEventListener('click', () => {
     const url = normalizeUrl(siteUrl.value);
     if (!url) { siteUrl.focus(); setBrowseStatus('Enter a website to open.'); return; }
-    const reader = baseUrl() + 'reader.html?url=' + encodeURIComponent(url);
-    const win = window.open(reader, '_blank');
+    const win = window.open(url, '_blank', 'noopener');
     if (win) {
-      setBrowseStatus('Opened in a new tab — 王软音 is applied automatically.');
+      setBrowseStatus('The real website is open in the new tab — click the 王软音 link (or bookmarklet) there to annotate it, like the extension.');
     } else {
       setBrowseStatus('Popup blocked — allow popups for this app, or copy the address and open it yourself.');
     }
   });
 
   siteUrl.addEventListener('keydown', (e) => { if (e.key === 'Enter') openBtn.click(); });
-  openPlainBtn.addEventListener('click', () => {
-    const url = normalizeUrl(siteUrl.value);
-    if (!url) { siteUrl.focus(); setBrowseStatus('Enter a website to open.'); return; }
-    const win = window.open(url, '_blank');
-    if (win) {
-      setBrowseStatus('Real site opened — the Advanced bookmarklet works there if needed.');
-    } else {
-      setBrowseStatus('Popup blocked — allow popups for this app.');
-    }
-  });
 
-// --- bookmarklet (Advanced) ------------------------------------------------------
+  // --- bookmarklet ----------------------------------------------------------------
   function buildBookmarklet() {
     const settings = collectSettings();
     const bases = candidateBases();
