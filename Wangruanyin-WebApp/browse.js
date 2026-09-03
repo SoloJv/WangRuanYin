@@ -16,7 +16,6 @@
   const siteUrl = $('siteUrl');
   const openBtn = $('openSiteBtn');
   const browseStatus = $('browseStatus');
-  const loadBox = $('loadBox');
   const frame = $('siteFrame');
   const errorBox = $('siteError');
   const errUrl = $('errUrl');
@@ -393,7 +392,7 @@
   }
 
   function showError(url) {
-    loadBox.hidden = true;
+    endLoading();
     frame.hidden = true;
     if (errUrl) errUrl.textContent = url;
     errorBox.hidden = false;
@@ -401,7 +400,6 @@
 
   function clearError() {
     errorBox.hidden = true;
-    loadBox.hidden = true;
     frame.hidden = false;
   }
 
@@ -411,11 +409,19 @@
     clearError();
   }
 
-  // Switches the app to "website viewer": the site fills the whole viewport,
-  // the paste tool hides, and the tools become a floating overlay.
+  function startLoading() {
+    if (openBtn) openBtn.classList.add('loading');
+  }
+  function endLoading() {
+    if (openBtn) openBtn.classList.remove('loading');
+  }
+
+  // Switches the app to "website viewer": the site fills the whole viewport and
+  // the paste tool hides. The tools panel stays a normal collapsible panel at
+  // the top — collapsed by default so the website gets all the space.
   function enterViewer() {
     document.body.classList.add('viewing');
-    document.body.classList.remove('tools-open'); // start with the tools hidden
+    setToolsCollapsed(true); // start with the tools hidden
     if (siteHost) siteHost.hidden = false;
     if (viewerCloseBtn) viewerCloseBtn.hidden = false;
     if (closePopupBtn) closePopupBtn.hidden = false;
@@ -423,7 +429,7 @@
 
   function exitViewer() {
     document.body.classList.remove('viewing');
-    document.body.classList.remove('tools-open');
+    setToolsCollapsed(false);
     if (siteHost) siteHost.hidden = true;
     if (viewerCloseBtn) viewerCloseBtn.hidden = true;
     if (closePopupBtn) closePopupBtn.hidden = true;
@@ -459,6 +465,7 @@
   }
 
   function showResult(res, url) {
+    endLoading();
     const settings = collectSettings();
     const bases = candidateBases();
     const doc = res.kind === 'md'
@@ -479,10 +486,10 @@
     if (siteUrl) siteUrl.value = url;
     const token = ++renderToken;
     clearError();
-    loadBox.hidden = false;
     frame.hidden = true;
     enterViewer();
-    setStatus('Starting…');
+    startLoading();               // small spinner in the Open button — no banner
+    setStatus('Fetching…');
 
     const cached = readCache(url);
     if (cached) {
@@ -515,23 +522,20 @@
   if (openBtn) openBtn.addEventListener('click', () => loadSite(siteUrl.value));
   if (siteUrl) siteUrl.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadSite(siteUrl.value); });
 
-  // Tools visibility: in the app the panel collapses; in the viewer it becomes
-  // a floating overlay so the website keeps ALL the space when hidden.
-  function setToolsVisible(visible) {
-    if (toolsPanel) toolsPanel.classList.toggle('collapsed', !visible);
-    if (document.body.classList.contains('viewing')) {
-      document.body.classList.toggle('tools-open', !!visible);
-    }
+  // Tools visibility: a plain collapsible panel (slider) at the top. Hidden by
+  // default when a site is open so the website takes all the space; the ⚙
+  // button in the header slides it down when needed.
+  function setToolsCollapsed(collapsed) {
+    if (toolsPanel) toolsPanel.classList.toggle('collapsed', collapsed);
     if (toolsToggle) {
-      toolsToggle.setAttribute('aria-expanded', String(!!visible));
-      toolsToggle.textContent = visible ? '⚙ Hide tools ▵' : '⚙ Show tools ▴';
+      toolsToggle.setAttribute('aria-expanded', String(!collapsed));
+      toolsToggle.textContent = collapsed ? '⚙ Show tools ▴' : '⚙ Hide tools ▾';
     }
   }
-  function toolsAreVisible() {
-    if (document.body.classList.contains('viewing')) return document.body.classList.contains('tools-open');
-    return toolsPanel ? !toolsPanel.classList.contains('collapsed') : false;
+  function toolsCollapsed() {
+    return toolsPanel ? toolsPanel.classList.contains('collapsed') : true;
   }
-  if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsVisible(!toolsAreVisible()));
+  if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsCollapsed(!toolsCollapsed()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
   // Close an overlay/popup of the opened site (consent banners, lightboxes…).
   if (closePopupBtn) closePopupBtn.addEventListener('click', () => {

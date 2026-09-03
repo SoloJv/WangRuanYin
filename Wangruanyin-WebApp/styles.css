@@ -87,28 +87,7 @@ body.viewing .header-open { margin-top: 0; }
   gap: 14px;
   align-items: center;
 }
-/* In the viewer the tools are an overlay (floating), never stealing the site's space. */
-body.viewing .tools-panel { display: none; }
-body.viewing.tools-open .tools-panel {
-  display: block;
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  max-height: 52vh;
-  overflow-y: auto;
-  z-index: 90;
-  background: #fff;
-  border: 1px solid #dde3ea;
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
-  padding: 6px 8px;
-}
-body.viewing.tools-open .tools-panel .controls {
-  margin: 4px 4px 8px;
-  min-width: 240px;
-  flex-direction: column;
-  align-items: flex-start;
-}
+body.viewing .tools-panel .controls { margin: 6px 12px; }
 .control-group { display: inline-flex; flex-direction: column; gap: 4px; }
 .toggle-label { font-size: 13px; color: #333; font-weight: 600; }
 .hint { font-size: 11px; color: var(--muted); line-height: 1.35; }
@@ -342,23 +321,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 body.viewing .site-host { padding: 0 6px 6px; }
 .site-host[hidden] { display: none; }
-.site-host .load-box {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #244d7d;
-  font-size: 14px;
-}
-.site-host .spinner {
-  width: 20px; height: 20px; flex-shrink: 0;
-  border: 3px solid #cfe0f1;
-  border-top-color: #244d7d;
-  border-radius: 50%;
-  animation: wryspin .8s linear infinite;
-}
-@keyframes wryspin { to { transform: rotate(360deg); } }
 #siteFrame {
   flex: 1 1 auto;
   min-height: 0;
@@ -368,6 +330,19 @@ body.viewing .site-host { padding: 0 6px 6px; }
   background: #fff;
 }
 body.viewing #siteFrame { border-radius: 0; border: none; }
+/* Small loading spinner inside the "Open website" button — no banner. */
+.btn-open.loading::before {
+  content: "";
+  display: inline-block;
+  width: 12px; height: 12px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  border: 2px solid rgba(255, 255, 255, .45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: wryspin .7s linear infinite;
+}
+@keyframes wryspin { to { transform: rotate(360deg); } }
 .site-host .site-error {
   flex: 1 1 auto;
   margin: 0;
