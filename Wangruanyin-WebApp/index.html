@@ -14,6 +14,7 @@
       <div class="app-title">
         <h1>王软音 · Wangruanyin</h1>
       </div>
+      <button type="button" id="viewerCloseBtn" class="clear-btn header-btn" hidden title="Close the website and return to the text tool">✕ Close site</button>
     </div>
     <div class="header-open">
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — open a website here">
@@ -112,32 +113,20 @@
   </section>
   </div>
 
-  <section class="card browse-card">
-    <div class="browse-head">
-      <h2>🌐 Website mode <span class="tag">open the REAL site — the features are added there, like the extension</span></h2>
+  <div id="siteHost" class="site-host" hidden>
+    <div id="loadBar" class="load-bar" hidden></div>
+    <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock"
+            title="Website opened in this page with 王软音 annotations"></iframe>
+    <div id="siteError" class="site-error" hidden>
+      <h3>Could not load this website</h3>
+      <p>王软音 tried several mirrors (Jina Reader, the Wikimedia CORS API and public CORS
+      proxies) to fetch <code id="errUrl"></code>, but none returned a usable copy.<br>
+      <span id="errHint">Causes are usually login-required pages, sites that block readers/proxies, or apps
+      that render only with client-side JavaScript.</span></p>
+      <p><button type="button" id="openRealSiteBtn" class="btn-open">↗ Open the real site in a new tab</button></p>
+      <p>Try a server-rendered address — Wikipedia, news and blogs work well.</p>
     </div>
-    <p class="browse-desc">
-      Type a website and click <strong>Open website</strong>: the <strong>actual website</strong> opens in a new
-      tab — nothing is fetched, proxied or re-rendered, so every image, link and script works exactly like the
-      browser extension. To add 王软音's features (pinyin, translations, HSK) to that page, drag the link below to
-      your bookmarks bar <strong>once</strong>, then click it on the page — the same floating panel as the extension
-      appears. The toggles above are baked into this link; change them here and it updates.
-    </p>
-    <div class="bookmark-apply">
-      <div class="browse-row bookmark-row">
-        <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#">王软音 · Wangruanyin</a>
-        <button type="button" id="copyBookmarkletBtn" class="clear-btn">Copy bookmarklet</button>
-      </div>
-      <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
-      <div id="browseProbe" class="browse-probe" aria-live="polite"></div>
-      <p id="browseFileWarning" class="browse-warning" hidden>
-        ⚠️ You opened the app from disk (<code>file://</code>). The bookmarklet loads the engine from the
-        published GitHub bases (<code>https://solojv.github.io/WangRuanYin/</code> and the jsDelivr CDN).
-      </p>
-      <p class="hint">The toggles above are baked into this bookmarklet — change them here and the link updates.
-        The 王软音 panel remembers your settings per website, just like the extension.</p>
-    </div>
-  </section>
+  </div>
 
   <main id="pasteWorkspace" class="workspace">
     <section class="pane input-pane card">
