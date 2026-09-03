@@ -1,6 +1,6 @@
 // page-runner.js
-// Wangruanyin website mode — runs INSIDE a third-party page after the
-// bookmarklet generated on the web app index loads the engine scripts.
+// Wangruanyin website viewer — runs INSIDE a fetched website after the hosting
+// app's engine bootstrap loads the engine scripts into the sandboxed iframe.
 // Mirrors the extension's content.js: pinyin annotations, sentence
 // translation, HSK colour coding, selection popup and read-aloud, all
 // operated from a small floating panel injected into the page.
@@ -670,15 +670,36 @@
     setStatus('王软音 ready — use the toggles above.');
   }
 
-  window.WryPageRunner = { init, cleanup, applySettings };
+  // Live re-annotation driven by the host page's header toggles (the website
+  // viewer): apply the new settings, drop the old annotations and rebuild
+  // cleanly — exactly like the panel toggles — so changing a header switch
+  // re-annotates the open page instantly.
+  function setSettings(s) {
+    applySettings(s || defaultSettings || settings);
+    removeAnnotations();
+    removeStandaloneHsk();
+    syncPanel();
+    if (selectionEnabled) document.addEventListener('mouseup', onSelectionMouseUp);
+    else document.removeEventListener('mouseup', onSelectionMouseUp);
+    if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
+    if (isEnabled) processPage();
+    setStatus('王软音 settings updated.');
+  }
 
-  // Safety boot: the reader page (parent) may postMessage us after load to
-  // re-apply settings if our inline bootstrap somehow lost the race.
+  window.WryPageRunner = { init, cleanup, applySettings, setSettings };
+
+  // Safety boot: the hosting page (parent) may postMessage us after load to
+  // re-apply settings if our inline bootstrap somehow lost the race, and to
+  // re-annotate live when the app's header toggles change.
   if (window.addEventListener) {
     window.addEventListener('message', (ev) => {
       const d = ev.data;
-      if (d && d.t === 'wryBoot' && window.WryPageRunner) {
-        window.WryPageRunner.init(d.s || window.__WRY_PAGE_SETTINGS__ || undefined);
+      if (d && window.WryPageRunner) {
+        if (d.t === 'wryBoot') {
+          window.WryPageRunner.init(d.s || window.__WRY_PAGE_SETTINGS__ || undefined);
+        } else if (d.t === 'wrySettings') {
+          window.WryPageRunner.setSettings(d.s || {});
+        }
       }
     }, false);
   }

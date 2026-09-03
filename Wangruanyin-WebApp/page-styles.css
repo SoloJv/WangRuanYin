@@ -1,6 +1,6 @@
 /* ===== Wangruanyin — page-styles.css =====
-   Injected into the visited website together with the engine scripts by the
-   bookmarklet generated on the index page. Contains ONLY the annotation, HSK,
+   Injected into the fetched website (inside the app's website viewer) together
+   with the engine scripts. Contains ONLY the annotation, HSK,
    selection-popup, TTS and floating-panel styles — nothing of the app chrome. */
 
 /* --- Pinyin annotation (same classes as the browser extension) --- */

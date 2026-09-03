@@ -12,7 +12,7 @@ This is the single, central README. The browser-specific folders each contain th
 
 | Situation | Recommended form |
 |---|---|
-| You want pinyin + translations **on any website you visit** (Wikipedia, news, forums…) | Browser extension (Chrome / Edge / Firefox / Safari) — or the web app's **website mode** (bookmarklet) |
+| You want pinyin + translations **on any website you visit** (Wikipedia, news, forums…) | Browser extension (Chrome / Edge / Firefox / Safari) — or the web app's **website viewer** |
 | You want a **standalone tool** — paste text you already have (a PDF, an article, your own notes) and annotate it | **Web app** (works in any browser, no installation) |
 | You develop / test locally without distributing | Developer-mode extension, or the web app |
 
@@ -42,24 +42,24 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 - **Read page aloud** — Play / Pause / Stop / Restart. Reads every annotated sentence with the browser's Chinese voice, highlighting the character being read.
 - Settings persist between sessions (localStorage). Use **Clear** to empty the input.
 
-### Use Wangruanyin on any website (website mode)
+### Use Wangruanyin on any website (website viewer)
 
-Like the browser extension, the web app annotates the **real page in place** — it never fetches,
-proxies or re-renders another website. A plain web page cannot run scripts inside another site's tab
-(same-origin policy), so the engine is delivered with a **bookmarklet** that works exactly like the
-extension's content script — one-time setup, then one click per page:
+The web app's features (pinyin, translation, HSK, read-aloud) sit in the header and stay visible while
+you browse. The **Website viewer** opens other websites **in this same page** (no new tab): the target
+page is fetched through mirrors a web page can actually reach — **Jina Reader** (which re-hosts any page
+server-side and serves it with CORS), **Wikimedia's own CORS API** for Wikipedia articles, and public CORS
+proxies as last resort — rendered in a sandboxed iframe below the toggles, and annotated automatically.
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
-2. In the **🌐 Website mode** card, drag the **王软音 · Wangruanyin** link to your bookmarks bar (do this once).
-3. Type a website (e.g. `https://zh.wikipedia.org`) and click **Open with 王软音** — the **real website** opens in a new tab.
-4. Click the **王软音 · Wangruanyin** bookmark on that tab. The floating **王软音 panel** appears with the full set of toggles — pinyin, sentence translation, translate-selection, language, HSK version + per-level legend, read-aloud and Reset — and toggling any button re-annotates the page immediately, exactly like the extension. Your index toggles are baked into the bookmarklet.
+2. In the **🌐 Website viewer** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open in this page**.
+3. The site loads right here, and pinyin / sentence translations / HSK colours are applied automatically.
+   The header toggles act like the extension's popup: change any toggle and the page re-annotates live.
+   Internal links navigate inside the viewer.
 
-> HTTPS note: GitHub Pages and the jsDelivr CDN are HTTPS, so the bookmarklet works on `https://`
-> websites directly. A local `http://localhost` server is treated as trustworthy by Chrome and Firefox;
-> a non-localhost HTTP server would only work on plain-`http` sites.
-
-> A few sites block injected scripts (strict Content-Security-Policy or heavy JS frameworks). For those,
-> install and use the browser **extension**, which runs in every page regardless of the site's scripts.
+> Why not open the real site in a tab? A plain web page cannot run scripts inside another website's tab
+> (same-origin policy), so fetching and rendering here is the only way the app's features can control the
+> page. Sites that need login, block readers/proxies, or render only with client-side JavaScript can't be
+> fetched — for those, install and use the browser **extension**, which runs in every page natively.
 
 ### Hosting on GitHub Pages
 
@@ -87,7 +87,7 @@ Wangruanyin-WebApp/
 ├── annotator.js                (pinyin annotation + HSK engine)
 ├── translator.js               (Google Translate call)
 ├── page-runner.js              (injected engine + floating panel)
-├── browse.js                   (website-mode: open real site + bookmarklet)
+├── browse.js                   (in-page website viewer: fetch → iframe → auto-annotate)
 ├── reader.html                 (redirect shim for old reader.html?url=… links)
 ├── pinyin-data.js              (pinyin lookup helpers)
 ├── pinyin-dict-characters.js   (large character→pinyin dictionary — REQUIRED)
@@ -170,9 +170,9 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
-- **Website mode: why does it open the real site instead of fetching it?** A plain web page cannot run scripts inside another website's tab (same-origin policy), so the web app never fetches or re-renders other sites — it opens the **actual website**, and the **bookmarklet** injects the engine there (drag it to the bookmarks bar once, then click it on any page). This is the same engine the browser extension uses.
-- **Website mode: “Open with 王软音” blocked?** Allow pop-ups for the app page, or copy the address and open it yourself (append `reader.html?url=…`, which simply redirects to the site), then use the bookmarklet.
-- **Website mode toggles not remembered?** The panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the defaults.
+- **Website viewer: can't load a site?** The viewer fetches pages through Jina Reader, the Wikimedia CORS API (for Wikipedia articles) and public CORS proxies. Sites that block all of those (or require login, or render only via client-side JS) show an error — try a server-rendered address, or use the browser **extension**, which annotates any page natively.
+- **Website viewer: why does it fetch instead of opening the real site in a tab?** A plain web page cannot run scripts inside another website's tab (same-origin policy), so the app fetches and renders the site in its own page — that's the only way the header toggles can annotate it. This is the same engine the browser extension uses.
+- **Website viewer toggles not remembered?** The floating panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the defaults.
 
 ---
 
