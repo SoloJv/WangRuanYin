@@ -52,16 +52,19 @@ proxies as last resort — rendered in a sandboxed iframe below the toggles, and
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. In the **🌐 Website viewer** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open in this page**.
-3. The site loads and fills **the whole page** — there is no loading banner: a small spinner appears
-   briefly in the **Open website** button while it fetches, then the page appears and is annotated
-   automatically. Links on the page navigate **inside the viewer**, and 王软音 re-annotates each page
-   as you go. The annotation controls live in a collapsible **tools panel** (⚙ button in the header)
-   that is hidden by default, so the website gets every pixel. Changing a toggle re-annotates the page
-   instantly, and the site is cached (15 min) so re-opening it is instant. On mobile, tap-and-hold
-   Chinese text to get a translation popup (the **Translate on selection** toggle).
+3. The site loads and fills **the whole page** — there is no loading banner: a slim progress bar (and a
+   small spinner in the **Open website** button) shows while it fetches, then the page appears and is
+   annotated instantly. Links on the page navigate **inside the viewer** — the current page stays visible
+   while the next one loads (no blank/black screen), and 王软音 re-annotates each page as you go. The
+   annotation controls live in a collapsible **tools panel** (⚙ button in the header) that is hidden by
+   default, so the website gets every pixel. Changing a toggle re-annotates the page live, and the site
+   is cached (15 min) so re-opening it is instant. Pinyin appears immediately; sentence translations
+   fill in as they arrive. On mobile, tap-and-hold Chinese text to get a translation popup (the
+   **Translate on selection** toggle).
 
-> **Sites that can't be rendered** (login walls, heavy JS like Weibo, or sites that block all readers):
-> the viewer shows a **↗ Open the real site** button — click it to open the page in a new tab, where the
+> **Sites that can't be rendered** (login walls like Weibo's visitor system, heavy JS, or sites that
+> block all readers): the viewer rejects the login page automatically and shows a **↗ Open the real
+> site** card (the previous page stays visible). Click it to open the site in a new tab, where the
 > browser **extension** annotates it natively.
 
 > Why not open the real site in a tab? A plain web page cannot run scripts inside another website's tab

@@ -23,6 +23,7 @@
   const toolsToggle = $('toolsToggle');
   const viewerCloseBtn = $('viewerCloseBtn');
   const siteHost = $('siteHost');
+  const loadBar = $('loadBar');
   const openRealSiteBtn = $('openRealSiteBtn');
 
   // Cached copy of the most recent site (persisted in localStorage, session as a
@@ -169,21 +170,26 @@
       '</style></head><body>' + html + '</body></html>';
   }
 
-  // Reject proxy error pages so a real (if slow) source still wins.
+  // Reject proxy error pages so a real (if slow) source still wins. Also reject
+  // login/visitor walls (Weibo's "Sina Visitor System", login prompts) — those
+  // can't be annotated, so the viewer shows the real-site fallback instead.
   function isUsableHtml(html) {
     if (!html || html.length < 300) return false;
-    if (/<title[^>]*>(Cloudflare|522|502|524|504|Access denied|Just a moment|Attention Required|error[^<]*)/i.test(html)) return false;
+    if (/<title[^>]*>(Cloudflare|522|502|524|504|Access denied|Just a moment|Attention Required|Sina Visitor System|Please (sign|log) in|Login|登录|error[^<]*)/i.test(html)) return false;
     if (/<body[^>]*class="error-page"/i.test(html)) return false;
     if (/Enable JavaScript and cookies to continue/i.test(html)) return false;
+    if (/(Sina Visitor System|请先登录|请登录|登录后|需要登录)/i.test(html)) return false;
     if (!/<[a-zA-Z][\s>]/.test(html)) return false;
     return true;
   }
 
   function isUsableMd(text) {
-    if (!text || text.length < 40) return false;
+    if (!text || text.length < 120) return false;
     if (/^(cloudflare|522|502|524|504|error|access denied)/i.test(text.trim())) return false;
     // A markdown source must not hand us an HTML error/redirect page.
     if (/<!DOCTYPE|<html|<title>/i.test(text)) return false;
+    // Jina's readable fallback for a login wall: just a title + empty body.
+    if (/(Sina Visitor System|Please (sign|log) in|请先登录|请登录)/i.test(text)) return false;
     return true;
   }
 
@@ -373,6 +379,16 @@
 
   function showError(url) {
     endLoading();
+    // If the viewer is already showing a page, keep it visible and show the
+    // error as an overlay card on top — never blank/black the screen.
+    if (lastBlobUrl && frame.src) {
+      if (siteHost) siteHost.classList.add('has-error');
+      errorBox.hidden = false;
+      if (openRealSiteBtn) openRealSiteBtn.hidden = false;
+      if (errUrl) errUrl.textContent = url;
+      setStatus('Could not load ' + url + ' — the previous page stays open.');
+      return;
+    }
     frame.hidden = true;
     if (errUrl) errUrl.textContent = url;
     errorBox.hidden = false;
@@ -383,19 +399,25 @@
     errorBox.hidden = true;
     frame.hidden = false;
     if (openRealSiteBtn) openRealSiteBtn.hidden = true;
+    if (siteHost) siteHost.classList.remove('has-error');
   }
 
+  let lastBlobUrl = null;
   function renderInFrame(doc) {
     const blobUrl = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+    if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
+    lastBlobUrl = blobUrl;
     frame.src = blobUrl;
     clearError();
   }
 
   function startLoading() {
     if (openBtn) openBtn.classList.add('loading');
+    if (loadBar) loadBar.hidden = false;
   }
   function endLoading() {
     if (openBtn) openBtn.classList.remove('loading');
+    if (loadBar) loadBar.hidden = true;
   }
 
   // Switches the app to "website viewer": the site fills the whole viewport and
@@ -413,7 +435,11 @@
     setToolsCollapsed(false);
     if (siteHost) siteHost.hidden = true;
     if (viewerCloseBtn) viewerCloseBtn.hidden = true;
-    if (frame) frame.src = '';
+    if (frame) { frame.src = ''; frame.onload = null; }
+    if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
+    lastBlobUrl = null;
+    if (siteHost) siteHost.classList.remove('has-error');
+    errorBox.hidden = true;
   }
 
   // Cached copy of the most recent site, so re-opening it is instant.
@@ -445,17 +471,25 @@
   }
 
   function showResult(res, url) {
-    endLoading();
     const settings = collectSettings();
     const bases = candidateBases();
     const doc = res.kind === 'md'
       ? buildArticleDoc(res.text, url, settings, bases)
       : buildDocHtml(res.html, url, settings, bases);
-    renderInFrame(doc);
+
+    // Attach the load handler BEFORE swapping the src so the boot message can
+    // never be missed, then re-post a couple of times in case the page's own
+    // bootstrap is still fetching engine scripts when 'load' fires.
     frame.onload = () => {
       try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
+      window.setTimeout(() => {
+        try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
+      }, 700);
       setStatus('王软音 applied — change the toggles in the app header to re-annotate live.');
     };
+
+    renderInFrame(doc);
+    endLoading();
     setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 王软音…');
   }
 
@@ -466,9 +500,8 @@
     if (siteUrl) siteUrl.value = url;
     const token = ++renderToken;
     clearError();
-    frame.hidden = true;
     enterViewer();
-    startLoading();               // small spinner in the Open button — no banner
+    startLoading();               // slim progress bar + spinner in the Open button
     setStatus('Fetching…');
 
     const cached = readCache(url);

@@ -313,14 +313,39 @@ input:checked + .slider:before { transform: translateX(20px); }
 .site-host {
   flex: 1 1 auto;
   min-height: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 0 12px 12px;
   overflow: hidden;
+  background: #fff; /* never show black behind the site while it loads */
   /* The site host fills everything left over (all the space under the header). */
 }
 body.viewing .site-host { padding: 0 6px 6px; }
 .site-host[hidden] { display: none; }
+/* Slim, non-blocking progress bar shown while a page is fetching. */
+.load-bar {
+  flex: 0 0 auto;
+  height: 3px;
+  width: 100%;
+  background: #e3ecf5;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.load-bar::before {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #3490e0, #4CAF50);
+  border-radius: 2px;
+  animation: wryprogress 1.1s ease-in-out infinite;
+}
+@keyframes wryprogress {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(280%); }
+}
 #siteFrame {
   flex: 1 1 auto;
   min-height: 0;
@@ -354,6 +379,18 @@ body.viewing #siteFrame { border-radius: 0; border: none; }
   font-size: 13px;
   line-height: 1.6;
   overflow: auto;
+}
+/* When a page is already open, the error becomes a small floating card on top
+   of the still-visible previous page (never a blank/black replacement). */
+.site-host.has-error .site-error {
+  flex: 0 1 auto;
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, 94%);
+  z-index: 5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
 }
 .site-host .site-error h3 { color: #a33; margin: 0 0 8px; }
 .site-host .site-error code { background: #f6e6e6; border-radius: 4px; padding: 1px 5px; }

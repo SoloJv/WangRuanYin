@@ -101,6 +101,7 @@
   async function processPage() {
     if (!isEnabled || processing) return;
     processing = true;
+    const pending = []; // { zh, trEl } to translate in the background
     try {
       if (document.querySelector('.wry-hsk-span')) removeStandaloneHsk();
       const nodes = walkTextNodes(document.body);
@@ -112,13 +113,19 @@
         const sentences = A.splitIntoSentences(original);
         const outer = document.createDocumentFragment();
         for (const sentence of sentences) {
-          let translation = '';
-          try { translation = await getTranslation(sentence); } catch (e) {}
           if (!parent.contains(node)) break;
-          const frag = A.buildSentenceFragment(sentence, translation, {
+          // Pinyin appears immediately; the translation is fetched in the
+          // background below so a slow/limited Google endpoint never blocks
+          // the annotation of the rest of the page.
+          const frag = A.buildSentenceFragment(sentence, '', {
             showPinyin: true,
-            showTranslation: settings.translation
+            showTranslation: settings.translation,
+            waitTranslation: settings.translation
           });
+          if (settings.translation) {
+            const trEl = frag.querySelector('.zh-translation');
+            if (trEl) pending.push({ zh: sentence, trEl });
+          }
           outer.appendChild(frag);
         }
         if (parent.contains(node)) parent.replaceChild(outer, node);
@@ -129,6 +136,25 @@
       console.error('Wangruanyin page error:', e);
     } finally {
       processing = false;
+    }
+
+    // Background translations, small fixed concurrency so Google is never flooded
+    // and a large page (e.g. a full Wikipedia article) still feels responsive.
+    if (pending.length) {
+      const MAX_CONCURRENT = 4;
+      let idx = 0;
+      async function worker() {
+        while (idx < pending.length) {
+          const item = pending[idx++];
+          try {
+            const t = await getTranslation(item.zh);
+            if (item.trEl && item.trEl.isConnected) item.trEl.textContent = t || '';
+          } catch (e) { /* keep the "…" placeholder */ }
+        }
+      }
+      const workers = [];
+      for (let i = 0; i < Math.min(MAX_CONCURRENT, pending.length); i++) workers.push(worker());
+      await Promise.all(workers);
     }
   }
 
