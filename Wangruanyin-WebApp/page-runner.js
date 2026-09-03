@@ -100,6 +100,7 @@
 
   async function processPage() {
     if (!isEnabled || processing) return;
+    if (isPageProcessed) return; // never annotate the same page twice (double fetch / boot replay)
     processing = true;
     const pending = []; // { zh, trEl } to translate in the background
     try {
@@ -715,6 +716,7 @@
     if (panel) { panel.remove(); panel = null; }
   }
 
+  let bootStarted = false;
   function init(s) {
     defaultSettings = Object.assign(
       { pinyin: true, translation: true, selection: false, lang: 'en', hsk: 'off', disabled: [], hskHighlight: false },
@@ -724,6 +726,15 @@
     const saved = loadSavedSettings();
     if (saved) applySettings(saved); // per-site toggles win over the bookmark defaults
     panelSuppressed = defaultSettings.panel === false; // the host hides the popup
+
+    // The inline bootstrap AND the host both post wryBoot — make init idempotent
+    // so the page is never annotated / translated twice.
+    if (bootStarted) {
+      if (!isPageProcessed && isEnabled) processPage();
+      return;
+    }
+    bootStarted = true;
+
     if (!panelSuppressed) {
       buildPanel();
       wirePanel();

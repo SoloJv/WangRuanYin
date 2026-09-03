@@ -19,6 +19,7 @@
   const frame = $('siteFrame');
   const errorBox = $('siteError');
   const errUrl = $('errUrl');
+  const errHint = $('errHint');
   const toolsPanel = $('toolsPanel');
   const toolsToggle = $('toolsToggle');
   const viewerCloseBtn = $('viewerCloseBtn');
@@ -284,18 +285,19 @@
   }
 
   // Converts in-page navigation into viewer navigation via window.parent.postMessage.
-  // Only absolute http(s) links navigating to a DIFFERENT document are sent — a
-  // hash-only link (same page) or a mailto/tel link keeps the browser default.
+  // Uses CAPTURE phase so our handler fires even if a site's own script stops
+  // propagation. Hash-only links keep the browser default; target="_blank" links
+  // are left to the sandbox (they open as popups).
   function navHook() {
     return '<scr' + 'ipt>(function(d){function h(e){' +
       'var a=e.target&&e.target.closest?e.target.closest("a"):null;if(!a)return;' +
+      'if(a.target==="_blank")return;' +
       'var href=a.getAttribute("href");if(!href||href.charAt(0)==="#")return;' +
       'var u;try{u=new URL(href,document.baseURI);}catch(x){return;}' +
-      'if(u.protocol==="http:"||u.protocol==="https:"){' +
-      'if(u.origin===location.origin&&u.pathname===location.pathname&&(u.hash||"")!==(location.hash||""))return;' +
-      'e.preventDefault();' +
-      'window.parent.postMessage({t:"wryNav",u:u.href},"*");}}' +
-      'd.addEventListener("click",h,false);})(document);</scr' + 'ipt>';
+      'if(u.protocol!=="http:"&&u.protocol!=="https:")return;' +
+      'e.preventDefault();e.stopPropagation();' +
+      'window.parent.postMessage({t:"wryNav",u:u.href},"*");}' +
+      'd.addEventListener("click",h,true);})(document);</scr' + 'ipt>';
   }
 
     // Builds the sandboxed document: fetched page + our <base> (so relative
@@ -379,6 +381,9 @@
 
   function showError(url) {
     endLoading();
+    // Explain why a site failed — e.g. Weibo shows only a login/visitor wall.
+    const hint = loginWallHint(url);
+    if (errHint) errHint.textContent = hint;
     // If the viewer is already showing a page, keep it visible and show the
     // error as an overlay card on top — never blank/black the screen.
     if (lastBlobUrl && frame.src) {
@@ -393,6 +398,17 @@
     if (errUrl) errUrl.textContent = url;
     errorBox.hidden = false;
     if (openRealSiteBtn) openRealSiteBtn.hidden = false;
+  }
+
+  // Known login/visitor walls get a specific, honest explanation.
+  function loginWallHint(url) {
+    if (/weibo\.com/i.test(url)) {
+      return 'Weibo shows only a "Sina Visitor System" login wall to readers — it requires you to be\n' +
+        'signed in, so its content can\'t be shown inside the web app. Open it in a new tab and use the\n' +
+        'browser extension to annotate it there.';
+    }
+    return 'Causes are usually login-required pages, sites that block readers/proxies, or apps\n' +
+      'that render only with client-side JavaScript.';
   }
 
   function clearError() {
@@ -423,14 +439,18 @@
   // Switches the app to "website viewer": the site fills the whole viewport and
   // the paste tool hides. The tools panel stays a normal collapsible panel at
   // the top — collapsed by default so the website gets all the space.
+  let viewerActive = false;
   function enterViewer() {
+    const first = !viewerActive;
+    viewerActive = true;
     document.body.classList.add('viewing');
-    setToolsCollapsed(true); // start with the tools hidden
+    if (first) setToolsCollapsed(true); // collapse tools only when first entering
     if (siteHost) siteHost.hidden = false;
     if (viewerCloseBtn) viewerCloseBtn.hidden = false;
   }
 
   function exitViewer() {
+    viewerActive = false;
     document.body.classList.remove('viewing');
     setToolsCollapsed(false);
     if (siteHost) siteHost.hidden = true;
@@ -478,13 +498,11 @@
       : buildDocHtml(res.html, url, settings, bases);
 
     // Attach the load handler BEFORE swapping the src so the boot message can
-    // never be missed, then re-post a couple of times in case the page's own
-    // bootstrap is still fetching engine scripts when 'load' fires.
+    // never be missed. The inline bootstrap in the page also inits the engine,
+    // and init is idempotent — so this single message + the bootstrap never
+    // cause a page to be annotated/translated twice.
     frame.onload = () => {
       try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
-      window.setTimeout(() => {
-        try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
-      }, 700);
       setStatus('王软音 applied — change the toggles in the app header to re-annotate live.');
     };
 
