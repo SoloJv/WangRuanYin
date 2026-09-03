@@ -54,13 +54,13 @@ proxies as last resort — rendered in a sandboxed iframe below the toggles, and
 2. In the **🌐 Website viewer** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open in this page**.
 3. The site loads and fills **the whole page** — there is no loading banner: a slim progress bar (and a
    small spinner in the **Open website** button) shows while it fetches, then the page appears and is
-   annotated instantly. Links on the page navigate **inside the viewer** — the current page stays visible
-   while the next one loads (no blank/black screen), and 王软音 re-annotates each page as you go. The
+   annotated instantly. Clicking a link updates the **address box on top** (like a normal browser) and
+   loads the page **inside the viewer** with 王软音 re-annotating it; if a reader is blocked/rate-limited,
+   the app falls back to opening the clicked page directly in the frame so surfing always works. The
    annotation controls live in a collapsible **tools panel** (⚙ button in the header) that is hidden by
-   default, so the website gets every pixel. Changing a toggle re-annotates the page live, and the site
-   is cached (15 min) so re-opening it is instant. Pinyin appears immediately; sentence translations
-   fill in as they arrive. On mobile, tap-and-hold Chinese text to get a translation popup (the
-   **Translate on selection** toggle).
+   default, so the website gets every pixel. Pinyin appears immediately; sentence translations fill in
+   as they arrive. On mobile, tap-and-hold Chinese text to get a translation popup (the **Translate on
+   selection** toggle).
 
 > **Sites that can't be rendered** (login walls like Weibo's visitor system, heavy JS, or sites that
 > block all readers): the viewer rejects the login page automatically and shows a **↗ Open the real

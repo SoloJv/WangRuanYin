@@ -544,9 +544,27 @@
       })
       .catch((err) => {
         if (token !== renderToken) return;
+        // We're already browsing a site inside the viewer — fall back to
+        // navigating the iframe DIRECTLY to the clicked URL, the way a normal
+        // browser would. Works for any site that allows framing (Wikipedia
+        // sends no X-Frame-Options, so wiki links always open like this).
+        if (viewerActive && lastBlobUrl && frame && !framingBlocked(url)) {
+          if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
+          lastBlobUrl = null;
+          frame.src = url;
+          endLoading();
+          setStatus('Opened ' + url + ' directly — 王软音 annotations paused on this page.');
+          return;
+        }
         showError(url);
         console.warn('Wangruanyin viewer:', err);
       });
+  }
+
+  // Sites that refuse to be framed (X-Frame-Options: SAMEORIGIN / DENY) can't
+  // be shown directly inside the viewer — keep the error + real-site fallback.
+  function framingBlocked(url) {
+    return /weibo\.com/i.test(url);
   }
 
   // --- events ------------------------------------------------------------------
@@ -589,11 +607,15 @@
   document.querySelectorAll('input[name="hskMode"]').forEach((r) => r.addEventListener('change', pushSettings));
   document.querySelectorAll('#hskLegend .hsk-color').forEach((sw) => sw.addEventListener('click', pushSettings));
 
-  // Navigation from inside the fetched page: the nav hook posts wryNav to us.
-  // We reload the target through the same mirror pipeline so the site stays
-  // navigable IN the viewer and 王软音 keeps re-annotating each page.
+  // Navigation from inside the fetched page: update the top address bar exactly
+  // like a normal browser, then load the target. The annotated mirror-fetch is
+  // tried first; if it fails (rate-limited reader, blocked mirror) loadSite
+  // falls back to navigating the iframe directly to the URL.
   window.addEventListener('message', (ev) => {
     const d = ev.data;
-    if (d && d.t === 'wryNav' && d.u) loadSite(d.u);
+    if (d && d.t === 'wryNav' && d.u) {
+      if (siteUrl) siteUrl.value = d.u;
+      loadSite(d.u);
+    }
   });
 })();
