@@ -46,14 +46,19 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 
 The web app can annotate **other websites** in a separate tab. A plain web page cannot inject scripts
 into another website's tab (same-origin policy), so the app does it itself: it fetches the page through
-public CORS proxies, renders it in a sandboxed iframe inside its own new tab, and injects the engine
-there — pinyin, translations and HSK colours appear **automatically**, no extra clicks:
+mirrors a web page can actually reach — **Jina Reader** (a service that re-hosts any page server-side
+and serves it with CORS; asked for the *real HTML* it returns the original layout), **Wikimedia's own
+CORS API** for Wikipedia articles, plus public CORS proxies as last resort — renders it in a sandboxed
+iframe inside its own new tab, and injects the engine there — pinyin, translations and HSK colours
+appear **automatically**, no extra clicks:
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. In the **🌐 Website mode** card, type a website (e.g. `https://zh.wikipedia.org`) and click **Open with 王软音**.
 3. A new tab of the app opens the **reader**: it fetches the page from **several mirrors in parallel**
-   (CORS proxies — allorigins, codetabs, corsproxy — plus a readable-text service) and renders it in a
-   sandboxed iframe. The floating **王软音 panel** then appears with the full set of toggles — pinyin,
+   (Jina Reader — raw HTML or readable text — plus the Wikimedia CORS API for Wikipedia articles, and
+   public CORS proxies such as allorigins / codetabs / corsproxy.io as backups) and the **first usable
+   copy wins**, so a dead mirror never delays the page. It then renders it in a sandboxed iframe. The
+   floating **王软音 panel** appears with the full set of toggles — pinyin,
    sentence translation, translate-selection, language, HSK version + per-level legend, read-aloud and
    Reset — so the page reads exactly like it does with the extension. Server-rendered pages (Wikipedia,
    news, blogs) show the original layout; if the raw HTML can't be fetched, the reader falls back to a
@@ -181,7 +186,7 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
-- **Website mode: the reader can't load a site?** The reader fetches pages through public CORS proxies — sites that block those proxies (or require login, or render only via client-side JS) will show the error page. Use **↗ Real site** in the reader's toolbar, open the site in a normal tab, and use the **Advanced** bookmarklet there, or try a different (server-rendered) address.
+- **Website mode: the reader can't load a site?** The reader fetches pages through Jina Reader, the Wikimedia CORS API (for Wikipedia articles) and public CORS proxies. Sites that block all of those (or require login, or render only via client-side JS) will show the error page. Use **↗ Real site** in the reader's toolbar, open the site in a normal tab, and use the **Advanced** bookmarklet there, or try a different (server-rendered) address.
 - **Website mode: “Open with 王软音” blocked?** Allow pop-ups for the app page, or copy the address and open it yourself (append `reader.html?url=…`), then use the Advanced bookmarklet.
 - **Website mode toggles not remembered?** The panel stores them per website in that site's `localStorage`; if the site blocks storage, they won't persist (they still apply for the current session). Use **Reset** in the panel to restore the defaults.
 

@@ -1,8 +1,9 @@
 // browse.js — Wangruanyin "website mode".
 //
 // PRIMARY flow: type a website → click "Open with 王软音". A new tab of THIS
-// web app opens (reader.html?url=…): the reader fetches the site through a CORS
-// proxy, renders it in a sandboxed iframe and injects the Wangruanyin engine,
+// web app opens (reader.html?url=…): the reader fetches the site through
+// several mirrors (Jina Reader, the Wikimedia CORS API, public CORS proxies),
+// renders it in a sandboxed iframe and injects the Wangruanyin engine,
 // so pinyin / translations / HSK are applied on that page AUTOMATICALLY.
 //
 // ADVANCED flow (for sites the reader can't fetch — login walls, heavy JS):

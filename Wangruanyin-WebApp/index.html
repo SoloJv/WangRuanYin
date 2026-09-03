@@ -102,11 +102,12 @@
     </div>
     <p class="browse-desc">
       Type a website and click <strong>Open with 王软音</strong> — it opens in a new tab of this web app,
-      the page is fetched through several mirrors automatically and rendered there, and pinyin,
-      translations &amp; HSK colours are applied <strong>automatically</strong> (a floating panel lets you
-      adjust the toggles on the page, just like the browser extension). Your toggles and HSK choices
-      from above are used automatically. If fetching the raw page fails, the app falls back to a clean
-      <strong>readable render</strong> of the same content.
+      the page is fetched automatically through <strong>Jina Reader</strong> (a service that re-hosts any
+      page server-side and returns its real HTML), <strong>Wikipedia's own CORS API</strong> for articles,
+      plus public CORS proxies, and rendered there with pinyin, translations &amp; HSK colours applied
+      <strong>automatically</strong> (a floating panel lets you adjust the toggles on the page, just like
+      the browser extension). Your toggles and HSK choices from above are used automatically. If fetching
+      the raw page fails, the app falls back to a clean <strong>readable render</strong> of the same content.
     </p>
     <div class="browse-row">
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — the website you want to visit">

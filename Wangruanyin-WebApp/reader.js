@@ -1,8 +1,10 @@
 // reader.js — 王软音 website reader.
 // Opens a target website in a new tab of THIS web app, fetches the page
-// through public CORS proxies (a plain web page can't script another site's
-// tab), renders it in a sandboxed iframe, and injects the Wangruanyin engine
-// so pinyin / translation / HSK are applied AUTOMATICALLY.
+// through mirrors a plain web page can actually reach (Jina Reader, which
+// re-hosts any site server-side and serves it with CORS, Wikimedia's own CORS
+// API for Wikipedia articles, and public CORS proxies as last resort), renders
+// it in a sandboxed iframe, and injects the Wangruanyin engine so pinyin /
+// translation / HSK are applied AUTOMATICALLY.
 (() => {
   'use strict';
 
@@ -110,24 +112,62 @@
       'd.addEventListener("click",h,false);})(document);</scr' + 'ipt>';
   }
 
-  // --- fetching: parallel multi-source with validation --------------------------
-  // Each source is raced in parallel (first *usable* page wins). Many public
-  // CORS proxies are flaky, so we give each a generous timeout and validate the
-  // result so a Cloudflare error page or a captcha never "wins".
+  // --- fetching: parallel multi-mirror with validation ------------------------
+  // Mirrors are raced in parallel and the FIRST *usable* result wins, so a fast
+  // healthy mirror never has to wait for a dead one to time out. Real-site HTML
+  // is preferred over the readable-text (markdown) fallback because it keeps the
+  // original layout and images; markdown is only used when every HTML source
+  // fails.
+  //
+  // Mirror choices (all verified to send Access-Control-Allow-Origin for this
+  // origin, which a plain web page needs):
+  //  r.jina.ai             Jina Reader — fetches any page server-side and re-hosts
+  //                        it with CORS. With the X-Return-Format: html header it
+  //                        returns the real page HTML (original layout, images);
+  //                        without it, readable markdown. Rate-limited on the free
+  //                        tier, hence the fallbacks.
+  //  *.wikipedia.org       Wikimedia's own CORS API (action=parse&origin=*) — no
+  //                        third party involved, always up for Wikipedia articles.
+  //  api.allorigins.win / api.codetabs.com / corsproxy.io — classic public CORS
+  //                        proxies, kept as last-resort mirrors (go up/down).
   const SOURCES = [
-    { name: 'allorigins', kind: 'html', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
-    { name: 'allorigins-get', kind: 'json', build: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
-    { name: 'codetabs', kind: 'html', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
-    { name: 'corsproxy', kind: 'html', build: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
-    { name: 'jina-readable', kind: 'md', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://r.jina.ai/' + u) }
+    {
+      name: 'jina-raw',
+      label: 'Jina Reader',
+      kind: 'html',
+      build: (u) => 'https://r.jina.ai/' + u,
+      headers: { 'X-Return-Format': 'html', 'Accept': 'text/html' },
+      timeout: 30000
+    },
+    {
+      name: 'jina-readable',
+      label: 'Jina Reader (readable)',
+      kind: 'md',
+      build: (u) => 'https://r.jina.ai/' + u,
+      timeout: 40000
+    },
+    {
+      name: 'wikipedia-api',
+      label: 'Wikimedia API',
+      kind: 'wiki',
+      matches: (u) => /^https?:\/\/([a-z0-9-]+\.)*wikipedia\.org\//i.test(u),
+      build: wikiApiUrlFor,
+      timeout: 20000
+    },
+    { name: 'allorigins', label: 'AllOrigins', kind: 'html', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+    { name: 'allorigins-get', label: 'AllOrigins', kind: 'json', build: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
+    { name: 'codetabs', label: 'CodeTabs', kind: 'html', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+    { name: 'corsproxy', label: 'CORSProxy.io', kind: 'html', build: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) }
   ];
   const FETCH_TIMEOUT = 45000;
 
-  function fetchWithTimeout(url, ms) {
+  function fetchWithTimeout(url, ms, headers) {
     return new Promise((resolve, reject) => {
       const ctl = new AbortController();
       const t = setTimeout(() => ctl.abort(), ms);
-      fetch(url, { signal: ctl.signal })
+      const opts = { signal: ctl.signal };
+      if (headers) opts.headers = headers;
+      fetch(url, opts)
         .then((r) => {
           if (!r.ok) throw new Error('HTTP ' + r.status);
           return r.text();
@@ -154,39 +194,99 @@
     return true;
   }
 
-  // Fetches the page from all sources in parallel and returns the first usable
-  // one: { kind:'html', html } or { kind:'md', text }.
+  // Wikipedia article URL → Wikimedia CORS API query. action=parse returns the
+  // rendered article HTML inside JSON; origin=* is Wikimedia's own CORS opt-in.
+  function wikiApiUrlFor(u) {
+    try {
+      const url = new URL(u);
+      if (!/\.wikipedia\.org$/i.test(url.hostname)) return '';
+      const m = url.pathname.match(/^\/wiki\/(.+)$/i);
+      const page = m ? decodeURIComponent(m[1]) : 'Wikipedia';
+      return url.origin + '/w/api.php?action=parse&page=' + encodeURIComponent(page) +
+        '&prop=text&format=json&origin=*&disableeditsection=1&redirects=1';
+    } catch (e) { return ''; }
+  }
+
+  // Minimal, safe full-page shell around MediaWiki's parsed article HTML (the
+  // reader's buildDocHtml() adds the real <base> + engine bootstrap afterwards).
+  function wrapWikiDoc(html) {
+    return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<style>' +
+      'body{font-family:Georgia,\'Times New Roman\',serif;max-width:880px;margin:0 auto;' +
+      'padding:0 20px 80px;line-height:1.75;color:#202122;}' +
+      '.mw-parser-output{font-size:16px;} .mw-parser-output a{color:#0645ad;}' +
+      '.mw-parser-output img{max-width:100%;height:auto;}' +
+      '.mw-parser-output table{border-collapse:collapse;} .mw-parser-output td,' +
+      '.mw-parser-output th{border:1px solid #a2a9b1;padding:6px 10px;vertical-align:top;}' +
+      '.mw-parser-output .infobox{float:right;clear:right;margin:0 0 14px 20px;background:#f8f9fa;}' +
+      '.mw-parser-output .infobox{border:1px solid #a2a9b1;padding:8px;font-size:90%;}' +
+      '.mw-parser-output .thumbinner{display:flex;flex-direction:column;align-items:center;}' +
+      '.mw-editsection{display:none;}' +
+      '@media(max-width:640px){.mw-parser-output .infobox{float:none;clear:both;margin:0 0 12px;}}' +
+      '</style></head><body>' + html + '</body></html>';
+  }
+
+  // Turns a mirror's raw response into a usable {kind, …} result, or null.
+  function parseSource(src, body) {
+    try {
+      if (src.kind === 'json') {
+        const parsed = JSON.parse(body);
+        if (parsed && typeof parsed.contents === 'string') body = parsed.contents;
+        else return null;
+        if (!isUsableHtml(body)) return null;
+        return { kind: 'html', html: body, source: src.name, label: src.label };
+      }
+      if (src.kind === 'wiki') {
+        const j = JSON.parse(body);
+        const t = j && j.parse && j.parse.text && (j.parse.text['*'] || j.parse.text);
+        if (typeof t !== 'string' || t.length < 300 || !isUsableHtml('<div>' + t.slice(0, 2000) + '</div>')) return null;
+        return { kind: 'html', html: wrapWikiDoc(t), source: src.name, label: src.label };
+      }
+      if (src.kind === 'md') {
+        if (!isUsableMd(body)) return null;
+        return { kind: 'md', text: body, source: src.name, label: src.label };
+      }
+      if (!isUsableHtml(body)) return null;
+      return { kind: 'html', html: body, source: src.name, label: src.label };
+    } catch (e) { return null; }
+  }
+
+  // Fetches the page from every usable mirror in parallel and settles on the
+  // FIRST usable result (a mirror that already failed/succeeded never blocks the
+  // others). Real-site HTML is preferred: markdown is accepted only once every
+  // HTML source has failed.
   function fetchPage(url) {
     setStatus('Fetching the page from several mirrors…');
-    const tasks = SOURCES.map(async (src) => {
-      let body;
-      try {
-        body = await fetchWithTimeout(src.build(url), FETCH_TIMEOUT);
-      } catch (e) { return null; }
-      try {
-        if (src.kind === 'json') {
-          const parsed = JSON.parse(body);
-          if (parsed && typeof parsed.contents === 'string') body = parsed.contents;
-          else return null;
-          if (!isUsableHtml(body)) return null;
-          return { kind: 'html', html: body, source: src.name };
+    return new Promise((resolve, reject) => {
+      const live = SOURCES.filter((s) => !s.matches || s.matches(url));
+      if (live.length === 0) { reject(new Error('No mirror available for ' + url)); return; }
+      let settled = 0;
+      let bestHtml = null;
+      let bestMd = null;
+      const finish = () => {
+        if (bestHtml) { resolve(bestHtml); return; }
+        if (settled >= live.length) {
+          if (bestMd) resolve(bestMd);
+          else reject(new Error('No source returned a usable copy of ' + url));
         }
-        if (src.kind === 'md') {
-          if (!isUsableMd(body)) return null;
-          return { kind: 'md', text: body, source: src.name };
-        }
-        if (!isUsableHtml(body)) return null;
-        return { kind: 'html', html: body, source: src.name };
-      } catch (e) { return null; }
-    });
-    // Real-site HTML is always preferred over the readable-text fallback:
-    // prefer any usable raw-html result, and only then fall back to markdown.
-    return Promise.all(tasks).then((results) => {
-      const html = results.find((r) => r && r.kind === 'html');
-      if (html) return html;
-      const md = results.find((r) => r && r.kind === 'md');
-      if (md) return md;
-      throw new Error('No source returned a usable copy of ' + url);
+      };
+      live.forEach((src) => {
+        const ms = src.timeout || FETCH_TIMEOUT;
+        let p;
+        try {
+          const u = src.build(url);
+          p = u ? fetchWithTimeout(u, ms, src.headers) : Promise.reject(new Error('no mirror url'));
+        } catch (e) { p = Promise.reject(e); }
+        p
+          .then((body) => {
+            const r = parseSource(src, body);
+            if (r && r.kind === 'html' && !bestHtml) bestHtml = r;
+            else if (r && r.kind === 'md' && !bestMd) bestMd = r;
+          })
+          .catch(() => {})
+          .then(() => { settled++; finish(); });
+      });
     });
   }
 
@@ -321,7 +421,7 @@
           try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
           setStatus('王软音 applied — use the floating panel on the page.');
         };
-        setStatus('Rendering…');
+        setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 王软音…');
       })
       .catch((err) => {
         loaderFail(url);
