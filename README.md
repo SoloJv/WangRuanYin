@@ -66,12 +66,12 @@ the top box and tap **Open website**; everything stays inside the app. Sites you
 ### The extension method (annotate ANY real page, like the browser extension)
 
 The Chrome/Edge/Firefox extension works by having the **browser inject its script into the page you're
-viewing** — a privilege ordinary websites don't get automatically. The web app provides the **same
-method**, user-triggered, via the *The extension method* card: drag the **王软音 · Wangruanyin** link to
-your bookmarks bar **once**, then on any website (Weibo, ifeng, news… — even ones the in-app reader
-can't reach) click it and the **same floating 王软音 panel as the extension** appears on that real page:
-pinyin, sentence translation, selection popup, HSK, read-aloud. This is the exact content-script
-technique, no install required — one click per page.
+viewing** — a privilege ordinary websites don't get automatically. This lives in the app's **tools panel**
+(⚙ Hide tools in the header), which collapses along with the annotation toggles: drag the **王软音 ·
+Wangruanyin** link to your bookmarks bar **once**, then on any website (Weibo, ifeng, news… — even ones the
+in-app reader can't reach) click it and the **same floating 王软音 panel as the extension** appears on that
+real page: pinyin, sentence translation, selection popup, HSK, read-aloud. The link carries the app's
+logo (the same favicon as the web app).
 
 - **The toggles never get lost:** closing the floating panel leaves a small **王软音** button pinned at the
   bottom-right of the page; click it (or click the bookmark again) to bring the panel straight back with

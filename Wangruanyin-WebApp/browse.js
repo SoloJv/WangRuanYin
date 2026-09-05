@@ -140,7 +140,8 @@
     bmLink.setAttribute('href', code);
     bmLink.setAttribute('draggable', 'true');
     bmLink.title = 'Drag to your bookmarks bar, open any website, then click it — the extension method, no install.';
-    bmLink.textContent = '王软音 · Wangruanyin';
+    // Keep the 王软音 logo visible on the draggable link (matches the app favicon).
+    bmLink.innerHTML = '<img class="bookmarklet-icon" src="wangruanyin.png" alt="" draggable="false">王软音 · Wangruanyin';
   }
 
   function copyBookmarklet() {

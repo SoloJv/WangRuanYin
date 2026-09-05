@@ -94,7 +94,8 @@ body.viewing .header-open { margin-top: 0; }
 .tools-panel {
   flex: 0 0 auto;
   overflow: hidden;
-  max-height: 700px;
+  overflow-y: auto;
+  max-height: 1100px;
   transition: max-height .3s ease;
   background: #f2f3f5;
 }
@@ -330,6 +331,14 @@ input:checked + .slider:before { transform: translateX(20px); }
   padding: 8px 14px; border-radius: 8px; text-decoration: none; cursor: move; font-size: 14px;
 }
 .bookmarklet-link:hover { background: #3d9142; }
+.bookmarklet-link .bookmarklet-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 6px;
+  border-radius: 3px;
+  object-fit: contain;
+}
 .bookmarklet-code {
   width: 100%; height: 64px; font-family: Consolas, "Courier New", monospace;
   font-size: 11px; color: #333; border: 1px solid #ddd; border-radius: 6px;
