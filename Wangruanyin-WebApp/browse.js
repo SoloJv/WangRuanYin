@@ -25,6 +25,9 @@
   const realViewBtn = $('realViewBtn');
   const realNotice = $('realNotice');
   const realNoticeText = $('realNoticeText');
+  const embedBlocked = $('embedBlocked');
+  const embedBlockedUrl = $('embedBlockedUrl');
+  const embedOpenTab = $('embedOpenTab');
   const bmLink = $('bookmarkletLink');
   const bmCode = $('bookmarkletCode');
   const copyBtn = $('copyBookmarkletBtn');
@@ -235,6 +238,7 @@ function setStatus(msg) {
     viewerActive = false;
     viewMode = 'annotated';
     document.body.classList.remove('viewing');
+    hideEmbedBlocked();
     if (siteHost) siteHost.hidden = true;
     if (viewerCloseBtn) viewerCloseBtn.hidden = true;
     if (realViewBtn) realViewBtn.hidden = true;
@@ -514,6 +518,11 @@ function setStatus(msg) {
 
   function clearError() {
     frame.hidden = false;
+    hideEmbedBlocked();
+  }
+
+  function hideEmbedBlocked() {
+    if (embedBlocked) embedBlocked.hidden = true;
   }
 
   function showResult(res, url, token) {
@@ -547,6 +556,15 @@ function setStatus(msg) {
     clearError();
     enterViewer();
     startLoading();
+
+    // Sites like Weibo refuse to be shown inside ANY page (X-Frame-Options /
+    // frame-ancestors). The browser hard-blocks them — no website can override
+    // that, so show what works instead of a raw ERR_BLOCKED_BY_RESPONSE.
+    if (framingBlocked(url)) {
+      endLoading();
+      showEmbedBlocked(url);
+      return;
+    }
     setStatus('Loading ' + url + '…');
 
     // ALWAYS open the REAL site first and stay inside the app: real images,
@@ -634,11 +652,40 @@ function setStatus(msg) {
     }
   }
 
+  // Sites that refuse to be framed (Weibo sends X-Frame-Options: SAMEORIGIN —
+  // a hard, browser-enforced "can't embed me anywhere"). Match any weibo.com /
+  // weibo.cn host (apex, subdomain, any path like /newlogin?…).
+  function framingBlocked(url) {
+    try {
+      const host = (new URL(url).hostname || '').toLowerCase().replace(/\.$/, '');
+      if (host === 'weibo.com' || host.endsWith('.weibo.com')) return true;
+      if (host === 'weibo.cn' || host.endsWith('.weibo.cn')) return true;
+    } catch (e) { /* keep going */ }
+    if (/wbapp/i.test(url)) return true;
+    return false;
+  }
+
+  // Friendlier than a raw ERR_BLOCKED_BY_RESPONSE: explains WHY and what works.
+  function showEmbedBlocked(url) {
+    viewMode = 'blocked';
+    if (realNotice) realNotice.hidden = true;
+    if (frame) { frame.src = ''; frame.onload = null; }
+    if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
+    lastBlobUrl = null;
+    if (embedBlockedUrl) embedBlockedUrl.textContent = url;
+    if (embedBlocked) embedBlocked.hidden = false;
+    if (siteHost) siteHost.hidden = false;
+    if (realViewBtn) realViewBtn.hidden = true;
+    endLoading();
+    setStatus('');
+  }
+
   // Load the REAL site directly into the same iframe — the default experience:
   // native images, links and scripts; the 王软音 toggles then annotate on top.
   function showRealPage(url) {
     setViewMode('real');
     recordRecent(url);
+    hideEmbedBlocked();
     if (realNoticeText) realNoticeText.textContent =
       '🌐 Real site — the actual website, so images and links work natively. ' +
       '王软音 annotates it automatically when the reader can reach it; otherwise you keep surfing the real page.';
@@ -680,6 +727,10 @@ function setStatus(msg) {
   if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsCollapsed(!toolsCollapsed()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
   if (realViewBtn) realViewBtn.addEventListener('click', toggleView);
+  if (embedOpenTab) embedOpenTab.addEventListener('click', () => {
+    const u = (embedBlockedUrl && embedBlockedUrl.textContent) || (siteUrl && siteUrl.value) || '';
+    if (u) window.open(u, '_blank', 'noopener');
+  });
 
   // Live re-annotation from the header toggles: in the annotated view they
   // re-annotate instantly; in the REAL view they request the annotated version

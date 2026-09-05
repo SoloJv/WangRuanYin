@@ -84,6 +84,18 @@ technique, no install required — one click per page.
 > the real page, otherwise the genuine site without annotations. (On mobile there's no easy bookmarklet,
 > which is why the in-app viewer above is the recommended mobile path.)
 
+### Why Weibo can't be shown inside the app
+
+Weibo (and a few other sites) sends the header **`X-Frame-Options: SAMEORIGIN`** (or `frame-ancestors`),
+which tells *every* browser: "do not render this site inside any other web page." That's exactly the
+`ERR_BLOCKED_BY_RESPONSE` you see — it's enforced by Chrome/Safari themselves, **not by 王软音**, and no
+website can override it (it would be a security hole if one could). Weibo additionally requires a login
+session, so its content can't be proxied/read either.
+
+What *does* work for Weibo: 王软音 runs **inside** the real Weibo page — via the browser **extension**
+(permission granted by the browser), or via the **王软音 bookmarklet** (clicked on the Weibo tab —
+desktop). The viewer now shows this clearly instead of a raw blocked-screen error.
+
 ### Hosting on GitHub Pages
 
 The web app is published with GitHub Pages (repo **`SoloJv/WangRuanYin`**) and is **live**:

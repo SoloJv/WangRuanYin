@@ -414,3 +414,21 @@ body.viewing .site-host { padding: 0 6px 6px; }
   background: #fff;
 }
 body.viewing #siteFrame { border-radius: 0; border: none; }
+.embed-blocked {
+  flex: 1 1 auto;
+  align-self: center;
+  width: min(600px, 94%);
+  margin: 20px auto;
+  padding: 20px 24px;
+  color: #333;
+  background: #fbfcfe;
+  border: 1px solid #dde3ea;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
+}
+.embed-blocked h3 { margin: 0 0 8px; color: #a33; font-size: 16px; }
+.embed-blocked code { background: #eef1f5; border-radius: 4px; padding: 1px 5px; }
+.embed-blocked li { margin-bottom: 4px; }
+.embed-blocked .btn-open { margin-top: 6px; }
