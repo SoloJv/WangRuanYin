@@ -1,9 +1,9 @@
-// browse.js — 王软音 "website viewer": surf + translate IN THE SAME VIEW.
+// browse.js — 网软音 "website viewer": surf + translate IN THE SAME VIEW.
 //
 // The web app is the environment: the target website is fetched through mirrors
 // a web page can reach (Jina Reader, Wikipedia's own CORS API, public CORS
 // proxies), rebuilt with ABSOLUTE resource URLs so all images/CSS render, and
-// shown in a sandboxed iframe below the app's toggles. The 王软音 engine is
+// shown in a sandboxed iframe below the app's toggles. The 网软音 engine is
 // injected into that page so pinyin / translations / HSK are applied there —
 // and the header toggles re-annotate it live, like the extension's popup.
 // Clicking links navigates the SAME iframe (address bar updates, next page is
@@ -36,7 +36,7 @@
   const RECENTS_KEY = 'wry_viewer_recents_v1';
   const RECENTS_MAX = 6;
 
-  // 'annotated' = fetched + 王软音 injected; 'real' = real page loaded directly.
+  // 'annotated' = fetched + 网软音 injected; 'real' = real page loaded directly.
   let viewMode = 'annotated';
 
   // Cached copy of the most recent site so re-opening is instant.
@@ -102,7 +102,7 @@
   }
 
   // The bookmarklet uses the extension's method: the user clicks it ON the real
-  // page, so the floating 王软音 panel SHOULD appear (no panel:false — that's the
+  // page, so the floating 网软音 panel SHOULD appear (no panel:false — that's the
   // in-app viewer's setting only).
   function collectBookmarkletSettings() {
     const s = collectSettings();
@@ -123,7 +123,7 @@
       '(function(){var s=' + safe(s) + ';window.__WRY_PAGE_SETTINGS__=s;' +
       'var bases=' + safe(bases) + ';var f=' + safe(FILES) + ';var i=0;' +
       'function pick(){if(window.WryPageRunner){window.WryPageRunner.init(s);return;}' +
-      'if(i>=bases.length){if(window.console)window.console.warn("王软音: no script base reachable.");return;}' +
+      'if(i>=bases.length){if(window.console)window.console.warn("网软音: no script base reachable.");return;}' +
       'var b=bases[i++],st=document.createElement("link");st.rel="stylesheet";st.href=b+"page-styles.css";' +
       '(document.head||document.documentElement).appendChild(st);' +
       'function L(j){if(j>=f.length){pick();return;}' +
@@ -140,8 +140,8 @@
     bmLink.setAttribute('href', code);
     bmLink.setAttribute('draggable', 'true');
     bmLink.title = 'Drag to your bookmarks bar, open any website, then click it — the extension method, no install.';
-    // Keep the 王软音 logo visible on the draggable link (matches the app favicon).
-    bmLink.innerHTML = '<img class="bookmarklet-icon" src="wangruanyin.png" alt="" draggable="false">王软音 · Wangruanyin';
+    // Keep the 网软音 logo visible on the draggable link (matches the app favicon).
+    bmLink.innerHTML = '<img class="bookmarklet-icon" src="wangruanyin.png" alt="" draggable="false">网软音 · Wangruanyin';
   }
 
   function copyBookmarklet() {
@@ -423,7 +423,7 @@ function setStatus(msg) {
       ';window.__WRY_PAGE_SETTINGS__=s;var bases=' + safe(bases) +
       ';var f=' + safe(FILES) + ';var i=0;' +
       'function pick(){if(window.WryPageRunner){window.WryPageRunner.init(s);return;}' +
-      'if(i>=bases.length){if(window.console)window.console.warn("王软音: no base reachable.");return;}' +
+      'if(i>=bases.length){if(window.console)window.console.warn("网软音: no base reachable.");return;}' +
       'var b=bases[i++],st=document.createElement("link");st.rel="stylesheet";st.href=b+"page-styles.css";' +
       '(document.head||document.documentElement).appendChild(st);' +
       'function L(j){if(j>=f.length){pick();return;}' +
@@ -435,7 +435,7 @@ function setStatus(msg) {
 
   // Keeps surfing IN the viewer: any normal link click is intercepted (capture
   // phase) and forwarded to the host, which loads that page in the SAME iframe
-  // with 王软音 re-applied. Hash links, modified-clicks and new-tab links are
+  // with 网软音 re-applied. Hash links, modified-clicks and new-tab links are
   // left to the browser.
   function navHook() {
     return '<scr' + 'ipt>(function(d){function h(e){' +
@@ -539,13 +539,13 @@ function setStatus(msg) {
     frame.onload = () => {
       try { frame.contentWindow.postMessage({ t: 'wryBoot', s: settings, b: bases }, '*'); } catch (e) {}
       try { frame.contentWindow.scrollTo && frame.contentWindow.scrollTo(0, 0); } catch (e) {}
-      setStatus('王软音 applied — change the toggles in the app header to re-annotate live.');
+      setStatus('网软音 applied — change the toggles in the app header to re-annotate live.');
     };
     try { frame.contentWindow.postMessage({ t: 'wrySettings', s: settings }, '*'); } catch (e) {}
 
     renderInFrame(doc);
     endLoading();
-    setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 王软音…');
+    setStatus('Fetched via ' + (res.label || 'a mirror') + ' — applying 网软音…');
   }
 
   let renderToken = 0;
@@ -572,7 +572,7 @@ function setStatus(msg) {
     // links and scripts work natively and surfing never leaves this page.
     showRealPage(url);
 
-    // Then add 王软音 on top when possible: fetch through the reader pipeline and,
+    // Then add 网软音 on top when possible: fetch through the reader pipeline and,
     // if it succeeds, swap to the annotated view automatically.
     if (annotationEnabled()) fetchAndAnnotate(url, token);
   }
@@ -589,12 +589,12 @@ function setStatus(msg) {
   // simply stays — never an error card, never a new tab.
   function fetchAndAnnotate(url, token) {
     startLoading();
-    setStatus('Applying 王软音…');
+    setStatus('Applying 网软音…');
 
     const cached = readCache(url);
     if (cached) {
       const c = { kind: cached.kind, label: cached.label || 'cached copy', source: cached.source || 'cache', html: cached.html, text: cached.text };
-      setStatus('Loaded a cached copy — applying 王软音…');
+      setStatus('Loaded a cached copy — applying 网软音…');
       showResult(c, url, token);
       return;
     }
@@ -602,7 +602,7 @@ function setStatus(msg) {
       if (token !== renderToken) return;
       if (htmlRes.kind === 'html' && looksLikeEmptyShell(htmlRes.html)) {
         endLoading();
-        setStatus('王软音 isn\'t available on this site (login/JS app) — you\'re viewing the real page.');
+        setStatus('网软音 isn\'t available on this site (login/JS app) — you\'re viewing the real page.');
         return;
       }
       writeCache(url, htmlRes);
@@ -612,7 +612,7 @@ function setStatus(msg) {
         if (token !== renderToken) return;
         if (res.kind === 'html' && looksLikeEmptyShell(res.html)) {
           endLoading();
-          setStatus('王软音 isn\'t available on this site (login/JS app) — you\'re viewing the real page.');
+          setStatus('网软音 isn\'t available on this site (login/JS app) — you\'re viewing the real page.');
           return;
         }
         writeCache(url, res);
@@ -621,7 +621,7 @@ function setStatus(msg) {
       .catch(() => {
         if (token !== renderToken) return;
         endLoading();
-        setStatus('王软音 isn\'t available on this site — you\'re viewing the real page.');
+        setStatus('网软音 isn\'t available on this site — you\'re viewing the real page.');
       });
   }
 
@@ -639,16 +639,16 @@ function setStatus(msg) {
     return textOnly.length < 180;
   }
 
-  // Switches the viewer between "annotated" (王软音 applied) and "real page"
+  // Switches the viewer between "annotated" (网软音 applied) and "real page"
   // (the actual site loaded directly — native images/scripts; no annotations).
   function setViewMode(mode) {
     viewMode = mode;
     if (realNotice) realNotice.hidden = mode !== 'real';
     if (realViewBtn) {
       realViewBtn.hidden = false;
-      realViewBtn.textContent = mode === 'real' ? '✨ 王软音 view' : '↖ Real page';
+      realViewBtn.textContent = mode === 'real' ? '✨ 网软音 view' : '↖ Real page';
       realViewBtn.title = mode === 'real'
-        ? 'Show the page with 王软音 annotations (reader must be able to fetch it)'
+        ? 'Show the page with 网软音 annotations (reader must be able to fetch it)'
         : 'Show the real page directly (native images/scripts; annotations paused)';
     }
   }
@@ -682,18 +682,18 @@ function setStatus(msg) {
   }
 
   // Load the REAL site directly into the same iframe — the default experience:
-  // native images, links and scripts; the 王软音 toggles then annotate on top.
+  // native images, links and scripts; the 网软音 toggles then annotate on top.
   function showRealPage(url) {
     setViewMode('real');
     recordRecent(url);
     hideEmbedBlocked();
     if (realNoticeText) realNoticeText.textContent =
       '🌐 Real site — the actual website, so images and links work natively. ' +
-      '王软音 annotates it automatically when the reader can reach it; otherwise you keep surfing the real page.';
+      '网软音 annotates it automatically when the reader can reach it; otherwise you keep surfing the real page.';
     if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
     lastBlobUrl = null;
     frame.hidden = false;
-    frame.onload = () => setStatus('Real site loaded — 王软音 enhances it when possible.');
+    frame.onload = () => setStatus('Real site loaded — 网软音 enhances it when possible.');
     frame.src = url;
     endLoading();
   }

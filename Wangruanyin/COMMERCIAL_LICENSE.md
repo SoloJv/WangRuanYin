@@ -1,4 +1,4 @@
-# COMMERCIAL LICENSE — 王软音 · Wangruanyin
+# COMMERCIAL LICENSE — 网软音 · Wangruanyin
 
 The **MIT License** (see `LICENSE`) governs free, non-commercial use of this
 software. It does **NOT** grant the right to use Wangruanyin commercially.

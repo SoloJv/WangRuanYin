@@ -34,7 +34,7 @@
 
   // Per-site persistence — like the extension's chrome.storage: toggles changed
   // in the floating panel are remembered for that website in the site's own
-  // localStorage and re-applied the next time 王软音 is applied on that site.
+  // localStorage and re-applied the next time 网软音 is applied on that site.
   let defaultSettings = null;
   const SITE_KEY_PREFIX = 'wry_site_settings_';
 
@@ -132,7 +132,7 @@
         if (parent.contains(node)) parent.replaceChild(outer, node);
       }
       isPageProcessed = true;
-      setStatus('王软音 applied to this page.');
+      setStatus('网软音 applied to this page.');
     } catch (e) {
       console.error('Wangruanyin page error:', e);
     } finally {
@@ -535,7 +535,7 @@
     panel.id = 'wry-page-panel';
     panel.innerHTML =
       '<div class="wry-panel-head">' +
-        '<span class="wry-panel-title">王软音 · Wangruanyin</span>' +
+        '<span class="wry-panel-title">网软音 · Wangruanyin</span>' +
         '<span class="wry-panel-head-btns">' +
           '<button type="button" id="wrypgReset" class="wry-panel-btn" title="Forget this website&#39;s saved toggles and use the bookmark defaults">Reset</button>' +
           '<button type="button" class="wry-panel-close" title="Close and restore the page">&times;</button>' +
@@ -749,7 +749,7 @@
     }
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
-    if (!panelSuppressed) setStatus('王软音 ready — use the toggles above.');
+    if (!panelSuppressed) setStatus('网软音 ready — use the toggles above.');
   }
 
   // Shows the floating panel (rebuilding it if it was closed), so the toggles
@@ -774,8 +774,8 @@
     reopenBtn = document.createElement('button');
     reopenBtn.id = 'wry-reopen';
     reopenBtn.className = 'wry-reopen-btn';
-    reopenBtn.textContent = '王软音';
-    reopenBtn.title = 'Re-open the 王软音 panel';
+    reopenBtn.textContent = '网软音';
+    reopenBtn.title = 'Re-open the 网软音 panel';
     reopenBtn.addEventListener('click', showPanel);
     (document.body || document.documentElement).appendChild(reopenBtn);
   }
@@ -801,7 +801,7 @@
     }
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
-    if (!panelSuppressed) setStatus('王软音 settings updated.');
+    if (!panelSuppressed) setStatus('网软音 settings updated.');
   }
 
   window.WryPageRunner = { init, cleanup, applySettings, setSettings, showPanel, hidePanel };

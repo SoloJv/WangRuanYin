@@ -35,11 +35,11 @@ this namespace for cross‑browser compatibility, so the same `background.js`,
 
    Quickest for local testing: right‑click the folder → *Send to ZIP*, rename the
    `.zip` to `.xpi`, then *Install Add‑on From File…*.
-3. Enable **王软音 (Wangruanyin)** on the add‑ons page and pin it to the toolbar.
+3. Enable **网软音 (Wangruanyin)** on the add‑ons page and pin it to the toolbar.
 
 ## Verify it loads
 
-- In `about:addons` you should see **王软音 – Wangruanyin (Firefox)** with no errors.
+- In `about:addons` you should see **网软音 – Wangruanyin (Firefox)** with no errors.
 - Open a page with Chinese text (e.g. `zh.wikipedia.org`), click the toolbar icon,
   turn on **Pinyin annotations**.
 

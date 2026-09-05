@@ -1,4 +1,4 @@
-# 王软音 · Wangruanyin (Chrome Extension)
+# 网软音 · Wangruanyin (Chrome Extension)
 
 A Chrome extension that adds **pinyin** (Romanized pronunciation) and **translations** to Chinese text on any webpage. It works on both pinyin rendering (annotations over the page) and on-demand text selection translation.
 
@@ -41,18 +41,18 @@ Wangruanyin/
 - Click the **“Load unpacked”** (Carregar descomprimida) button.
 - In the file picker, select the **`Wangruanyin`** folder itself (the one that contains `manifest.json`).
 - Click **Select Folder**.
-- The extension **“王软音 (Wangruanyin)”** should now appear in the list.
+- The extension **“网软音 (Wangruanyin)”** should now appear in the list.
 
 ### 4. Pin it to the toolbar (optional but recommended)
 - Click the puzzle-piece icon (Extensions) in the top-right.
-- Find **王软音 (Wangruanyin)** and click the **pin 📌** so its icon stays visible in the toolbar.
+- Find **网软音 (Wangruanyin)** and click the **pin 📌** so its icon stays visible in the toolbar.
 
 ---
 
 ### Usage
 
 1. Open a web page that contains Chinese text (for example `zh.wikipedia.org`).
-2. Click the **王软音** icon in the toolbar to open the popup.
+2. Click the **网软音** icon in the toolbar to open the popup.
 3. In the popup:
    - Toggle **“Pinyin annotations”** ON → the page gets pinyin under each Chinese character and a sentence translation below.
    - Toggle **“Translate selection”** ON → then select any Chinese text on the page; a popup appears with Chinese/pinyin/translation.

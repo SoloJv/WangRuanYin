@@ -1,8 +1,8 @@
-# 王软音 · Wangruanyin
+# 网软音 · Wangruanyin
 
 Translation and learning service for HSK learners 
 
-**王软音 (Wangruanyin)** adds **pinyin** (Romanized pronunciation) annotations and **translations** to Chinese text, plus **HSK colour coding** and **read-aloud**. It ships in four forms: a **web app** and browser extensions for **Chrome, Edge, Firefox and Safari**.
+**网软音 (Wangruanyin)** adds **pinyin** (Romanized pronunciation) annotations and **translations** to Chinese text, plus **HSK colour coding** and **read-aloud**. It ships in four forms: a **web app** and browser extensions for **Chrome, Edge, Firefox and Safari**.
 
 This is the single, central README. The browser-specific folders each contain their own build, but read **this** file for installation and operation.
 
@@ -46,7 +46,7 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 
 The web app **is** the browsing environment: type a website and press **Open website**, and the **real
 site always loads first** inside the app — native images, links and scripts, exactly like a browser tab.
-Nothing ever opens in a separate tab. Then 王软音's toggles enhance that page: pinyin, sentence
+Nothing ever opens in a separate tab. Then 网软音's toggles enhance that page: pinyin, sentence
 translations and HSK colours are applied automatically when the page can be fetched through the reader;
 for sites that can't be fetched (login walls, JS-only news apps like Weibo/ifeng), you simply keep
 surfing the real page and a small note explains annotations aren't available there. Clicking links
@@ -54,7 +54,7 @@ inside the site keeps you in the app (no new tabs).
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. Type a website (e.g. `https://zh.wikipedia.org`) in the top box and click **Open website**.
-3. The **real site opens in the viewer** and 王软音 annotates it automatically when the reader can reach
+3. The **real site opens in the viewer** and 网软音 annotates it automatically when the reader can reach
    it (pinyin first, translations fill in). The **⚙ tools** panel collapses so the site takes all the
    space; changing any toggle re-annotates instantly. Clicking links navigates the same viewer and each
    new page is enhanced the same way.
@@ -67,13 +67,13 @@ the top box and tap **Open website**; everything stays inside the app. Sites you
 
 The Chrome/Edge/Firefox extension works by having the **browser inject its script into the page you're
 viewing** — a privilege ordinary websites don't get automatically. This lives in the app's **tools panel**
-(⚙ Hide tools in the header), which collapses along with the annotation toggles: drag the **王软音 ·
+(⚙ Hide tools in the header), which collapses along with the annotation toggles: drag the **网软音 ·
 Wangruanyin** link to your bookmarks bar **once**, then on any website (Weibo, ifeng, news… — even ones the
-in-app reader can't reach) click it and the **same floating 王软音 panel as the extension** appears on that
+in-app reader can't reach) click it and the **same floating 网软音 panel as the extension** appears on that
 real page: pinyin, sentence translation, selection popup, HSK, read-aloud. The link carries the app's
 logo (the same favicon as the web app).
 
-- **The toggles never get lost:** closing the floating panel leaves a small **王软音** button pinned at the
+- **The toggles never get lost:** closing the floating panel leaves a small **网软音** button pinned at the
   bottom-right of the page; click it (or click the bookmark again) to bring the panel straight back with
   all your settings — no need to start from scratch.
 
@@ -88,12 +88,12 @@ logo (the same favicon as the web app).
 
 Weibo (and a few other sites) sends the header **`X-Frame-Options: SAMEORIGIN`** (or `frame-ancestors`),
 which tells *every* browser: "do not render this site inside any other web page." That's exactly the
-`ERR_BLOCKED_BY_RESPONSE` you see — it's enforced by Chrome/Safari themselves, **not by 王软音**, and no
+`ERR_BLOCKED_BY_RESPONSE` you see — it's enforced by Chrome/Safari themselves, **not by 网软音**, and no
 website can override it (it would be a security hole if one could). Weibo additionally requires a login
 session, so its content can't be proxied/read either.
 
-What *does* work for Weibo: 王软音 runs **inside** the real Weibo page — via the browser **extension**
-(permission granted by the browser), or via the **王软音 bookmarklet** (clicked on the Weibo tab —
+What *does* work for Weibo: 网软音 runs **inside** the real Weibo page — via the browser **extension**
+(permission granted by the browser), or via the **网软音 bookmarklet** (clicked on the Weibo tab —
 desktop). The viewer now shows this clearly instead of a raw blocked-screen error.
 
 ### Hosting on GitHub Pages
@@ -145,7 +145,7 @@ Wangruanyin-WebApp/
 2. Launch **Chrome** → go to `chrome://extensions/` (or the puzzle-piece menu → **Extensions**).
 3. Turn on **Developer mode** (top-right).
 4. Click **Load unpacked** → select the **`Wangruanyin`** folder itself → **Select Folder**.
-5. The extension **王软音 (Wangruanyin)** appears in the list. Pin 📌 it to the toolbar (optional, recommended).
+5. The extension **网软音 (Wangruanyin)** appears in the list. Pin 📌 it to the toolbar (optional, recommended).
 
 ### Microsoft Edge
 
@@ -162,7 +162,7 @@ Firefox installs the add‑on from a packaged **`.xpi`** file (a normal ZIP rena
 1. In **Firefox** go to **about:addons** → click the gear (⚙) → **Install Add‑on From File…**.
    > If the gear option is missing: `about:config` → set `xpinstall.signatures.required` to `false`, restart Firefox, and repeat.
 2. Pick the **`Wangruanyin-Firefox.xpi`** you just built (the contents of the folder, zipped — not the folder itself).
-3. Enable **王软音 – Wangruanyin (Firefox)** on the add‑ons page and pin it to the toolbar.
+3. Enable **网软音 – Wangruanyin (Firefox)** on the add‑ons page and pin it to the toolbar.
 
 **Firefox note:** the JavaScript uses the `chrome.*` API namespace — Firefox intentionally supports it for cross‑browser compatibility, so the same scripts run unchanged. All platform differences are handled in `manifest.json`.
 
@@ -186,7 +186,7 @@ Safari does **not** allow sideloading a plain folder; a Safari Web Extension mus
 Operation is the same across Chrome and Edge (Firefox and Safari behave identically):
 
 1. Open a page with Chinese text (e.g. `zh.wikipedia.org`).
-2. Click the **王软音 / 网软音** toolbar icon to open the extension popup.
+2. Click the **网软音 / 网软音** toolbar icon to open the extension popup.
 3. In the popup:
    - **Pinyin annotations** ON → the page gets pinyin under each Chinese character and a sentence translation below.
    - **Translate selection** ON → select any Chinese text on the page; a popup appears with Chinese / pinyin / translation.
@@ -205,7 +205,7 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
-- **Website viewer: how does it decide between the real page and annotations?** The **real site always opens first** (native images/links/scripts, never a new tab). 王软音 then re-fetches that page through the reader to add pinyin/translations automatically when possible. If a page can't be read (login walls, JS-only news apps), you keep the genuine real page with a small note — no error screen.
+- **Website viewer: how does it decide between the real page and annotations?** The **real site always opens first** (native images/links/scripts, never a new tab). 网软音 then re-fetches that page through the reader to add pinyin/translations automatically when possible. If a page can't be read (login walls, JS-only news apps), you keep the genuine real page with a small note — no error screen.
 - **Website viewer: a site's links open new tabs?** Links stay inside the viewer; the iframe sandbox blocks new windows, so surfing never leaves the app. (If a site itself forces `target="_blank"`, those are suppressed too.)
 
 ---

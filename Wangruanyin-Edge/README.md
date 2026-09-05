@@ -18,14 +18,14 @@ Manifest V3 extension — only the install flow and packaged source differ.
 4. Click **Load unpacked** (Carregar descomprimida).
 5. Select the **`Wangruanyin-Edge`** folder (the one that contains `manifest.json`),
    then click **Select Folder**.
-6. **王软音 – Wangruanyin (Edge)** should now appear. Pin it to the toolbar.
+6. **网软音 – Wangruanyin (Edge)** should now appear. Pin it to the toolbar.
 
 > The whole folder (including the large `pinyin-dict-characters.js`) must stay in
 > place after loading — don’t delete it from disk or Edge disables the extension.
 
 ## Verify it loads
 
-- In the extension list, **王软音 – Wangruanyin (Edge)** should show **On**.
+- In the extension list, **网软音 – Wangruanyin (Edge)** should show **On**.
 - Open `zh.wikipedia.org`, click the toolbar icon, and turn on **Pinyin annotations**
   to see pinyin under Chinese characters plus a translation row.
 

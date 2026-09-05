@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>王软音 · Wangruanyin — Web App</title>
+  <title>网软音 · Wangruanyin — Web App</title>
   <link rel="icon" type="image/png" href="wangruanyin.png">
   <link rel="apple-touch-icon" href="wangruanyin.png">
   <meta name="theme-color" content="#d3441a">
@@ -14,7 +14,7 @@
   <header class="app-header">
     <div class="header-top">
       <div class="app-title">
-        <h1>王软音 · Wangruanyin</h1>
+        <h1>网软音 · Wangruanyin</h1>
       </div>
       <button type="button" id="viewerCloseBtn" class="clear-btn header-btn" hidden title="Close the website and return to the text tool">✕ Close site</button>
     </div>
@@ -124,11 +124,11 @@
       The extension works by <strong>injecting its script into the page you're viewing</strong> — the browser lets it
       run inside any website. The web app uses the <strong>same method</strong>, just user-triggered: drag this link to
       your bookmarks bar <strong>once</strong>, then on any site (Weibo, ifeng, news… — even ones the in-app reader
-      can't reach) click it and the <strong>same floating 王软音 panel as the extension</strong> appears on that real page.
+      can't reach) click it and the <strong>same floating 网软音 panel as the extension</strong> appears on that real page.
     </p>
     <div class="bookmark-apply">
       <div class="browse-row bookmark-row">
-        <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#"><img class="bookmarklet-icon" src="wangruanyin.png" alt="" draggable="false">王软音 · Wangruanyin</a>
+        <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#"><img class="bookmarklet-icon" src="wangruanyin.png" alt="" draggable="false">网软音 · Wangruanyin</a>
         <button type="button" id="copyBookmarkletBtn" class="clear-btn">Copy bookmarklet</button>
       </div>
       <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
@@ -141,16 +141,16 @@
   <div id="siteHost" class="site-host" hidden>
     <div id="realNotice" class="real-view-bar" hidden>
       <span id="realNoticeText">🌐 <strong>Real site</strong> — the actual website, so images and links work
-      natively. 王软音 can annotate it when the reader can reach it.</span>
+      natively. 网软音 can annotate it when the reader can reach it.</span>
     </div>
     <div id="embedBlocked" class="embed-blocked" hidden>
       <h3>This site can't be embedded here</h3>
       <p><span id="embedBlockedUrl"></span> sends <code>X-Frame-Options</code> / <code>frame-ancestors</code>,
       which makes <strong>every browser refuse to show it inside any app</strong> — that's the
-      <code>ERR_BLOCKED_BY_RESPONSE</code> you saw. 王软音 can't override a security rule set by the site,
+      <code>ERR_BLOCKED_BY_RESPONSE</code> you saw. 网软音 can't override a security rule set by the site,
       but it <em>can</em> run <strong>inside</strong> the real Weibo page:</p>
       <ul>
-        <li><strong>On a computer:</strong> drag the <strong>王软音 · Wangruanyin</strong> link (from the 🧩 card on
+        <li><strong>On a computer:</strong> drag the <strong>网软音 · Wangruanyin</strong> link (from the 🧩 card on
           the main page) to your bookmarks bar once, then click it on Weibo — the same panel as the extension appears.</li>
         <li><strong>On a phone:</strong> Weibo must be opened inside the browser itself — the browser
           <strong>extension</strong> (or the Chrome/Firefox mobile app with the extension) is what can annotate it there.</li>
@@ -159,7 +159,7 @@
     </div>
     <div id="loadBar" class="load-bar" hidden></div>
     <iframe id="siteFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-pointer-lock"
-            title="Website opened in this page with 王软音 annotations"></iframe>
+            title="Website opened in this page with 网软音 annotations"></iframe>
   </div>
 
   <main id="pasteWorkspace" class="workspace">
