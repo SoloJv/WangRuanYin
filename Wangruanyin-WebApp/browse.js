@@ -25,6 +25,9 @@
   const realViewBtn = $('realViewBtn');
   const realNotice = $('realNotice');
   const realNoticeText = $('realNoticeText');
+  const bmLink = $('bookmarkletLink');
+  const bmCode = $('bookmarkletCode');
+  const copyBtn = $('copyBookmarkletBtn');
 
   // 'annotated' = fetched + 王软音 injected; 'real' = real page loaded directly.
   let viewMode = 'annotated';
@@ -89,6 +92,63 @@
       hskHighlight: false,
       panel: false
     };
+  }
+
+  // The bookmarklet uses the extension's method: the user clicks it ON the real
+  // page, so the floating 王软音 panel SHOULD appear (no panel:false — that's the
+  // in-app viewer's setting only).
+  function collectBookmarkletSettings() {
+    const s = collectSettings();
+    delete s.panel;
+    return s;
+  }
+
+  // The exact content-script technique the extension uses, delivered as a
+  // javascript: URL: it injects page-styles.css + the engine scripts INTO the
+  // page you're viewing and initialises the runner — the same floating panel as
+  // the extension, on any real site (even ones the in-app reader can't reach).
+  function buildBookmarklet() {
+    const s = collectBookmarkletSettings();
+    const bases = candidateBases();
+    const j = JSON.stringify;
+    const safe = (x) => j(x).replace(/<\//g, '<\\/');
+    const code =
+      '(function(){var s=' + safe(s) + ';window.__WRY_PAGE_SETTINGS__=s;' +
+      'var bases=' + safe(bases) + ';var f=' + safe(FILES) + ';var i=0;' +
+      'function pick(){if(window.WryPageRunner){window.WryPageRunner.init(s);return;}' +
+      'if(i>=bases.length){if(window.console)window.console.warn("王软音: no script base reachable.");return;}' +
+      'var b=bases[i++],st=document.createElement("link");st.rel="stylesheet";st.href=b+"page-styles.css";' +
+      '(document.head||document.documentElement).appendChild(st);' +
+      'function L(j){if(j>=f.length){pick();return;}' +
+      'var n=document.createElement("script");n.src=b+f[j];' +
+      'n.onload=function(){L(j+1)};n.onerror=function(){pick()};' +
+      '(document.head||document.documentElement).appendChild(n);}L(0);}pick();})();';
+    return 'javascript:' + code;
+  }
+
+  function refreshBookmarklet() {
+    if (!bmCode || !bmLink) return;
+    const code = buildBookmarklet();
+    bmCode.value = code;
+    bmLink.setAttribute('href', code);
+    bmLink.setAttribute('draggable', 'true');
+    bmLink.title = 'Drag to your bookmarks bar, open any website, then click it — the extension method, no install.';
+    bmLink.textContent = '王软音 · Wangruanyin';
+  }
+
+  function copyBookmarklet() {
+    if (!bmCode) return;
+    bmCode.select();
+    bmCode.setSelectionRange(0, bmCode.value.length);
+    const okNow = () => setStatus('Bookmarklet copied — add it to your bookmarks (or drag the green link above).');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(bmCode.value).then(okNow).catch(() => setStatus('Copy failed — select the text manually.'));
+        return;
+      }
+    } catch (e) { /* fall through */ }
+    document.execCommand('copy');
+    okNow();
   }
 
   function normalizeUrl(raw) {
@@ -568,6 +628,7 @@ function setStatus(msg) {
   function toolsCollapsed() {
     return toolsPanel ? toolsPanel.classList.contains('collapsed') : true;
   }
+  if (copyBtn) copyBtn.addEventListener('click', copyBookmarklet);
   if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsCollapsed(!toolsCollapsed()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
   if (realViewBtn) realViewBtn.addEventListener('click', toggleView);
@@ -593,6 +654,17 @@ function setStatus(msg) {
   });
   document.querySelectorAll('input[name="hskMode"]').forEach((r) => r.addEventListener('change', pushSettings));
   document.querySelectorAll('#hskLegend .hsk-color').forEach((sw) => sw.addEventListener('click', pushSettings));
+
+  // Keep the bookmarklet in sync with the header toggles.
+  const refreshBm = () => window.setTimeout(refreshBookmarklet, 0);
+  ['togglePinyin', 'toggleTranslation', 'toggleSelection', 'targetLang'].forEach((id) => {
+    const el = $(id);
+    if (el) el.addEventListener('change', refreshBm);
+  });
+  document.querySelectorAll('input[name="hskMode"]').forEach((r) => r.addEventListener('change', refreshBm));
+  document.querySelectorAll('#hskLegend .hsk-color').forEach((sw) => sw.addEventListener('click', refreshBm));
+
+  refreshBookmarklet();
 
   // In-page links navigate the SAME iframe (surf + translate stay together).
   window.addEventListener('message', (ev) => {

@@ -59,11 +59,21 @@ inside the site keeps you in the app (no new tabs).
    space; changing any toggle re-annotates instantly. Clicking links navigates the same viewer and each
    new page is enhanced the same way.
 
-> **Why "real first"?** The web app may not run scripts inside another site's tab (same-origin policy),
-> so it loads the actual page (native) and then applies 王软音 on top by re-fetching through a reader
-> when possible. If a page can't be read that way (login walls, JS-only apps), you get the genuine site
-> without enhancements rather than an error — that's the same limitation the browser **extension**
-> solves natively.
+### The extension method (annotate ANY real page, like the browser extension)
+
+The Chrome/Edge/Firefox extension works by having the **browser inject its script into the page you're
+viewing** — a privilege ordinary websites don't get automatically. The web app provides the **same
+method**, user-triggered, via the *The extension method* card: drag the **王软音 · Wangruanyin** link to
+your bookmarks bar **once**, then on any website (Weibo, ifeng, news… — even ones the in-app reader
+can't reach) click it and the **same floating 王软音 panel as the extension** appears on that real page:
+pinyin, sentence translation, selection popup, HSK, read-aloud. This is the exact content-script
+technique, no install required — one click per page.
+
+> Why can't the web app do it automatically? A website's page is sandboxed by the same-origin policy and
+> may not inject scripts into another site's tab — that privilege is granted by the browser only to an
+> **installed extension** (via `manifest.json` content_scripts). The web app therefore uses the closest
+> legal equivalent: automatic when the in-app reader can fetch the page, otherwise the bookmarklet for
+> the real page, otherwise the genuine site without annotations.
 
 > The web app cannot run scripts inside another website's tab automatically (same-origin policy). For
 > sites where even the reader/proxy approach fails, the **extension** is the always-native option.

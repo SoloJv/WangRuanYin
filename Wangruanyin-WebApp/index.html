@@ -114,6 +114,27 @@
   </section>
   </div>
 
+  <section class="card browse-card">
+    <div class="browse-head">
+      <h2>🧩 The extension method <span class="tag">annotate the REAL page you're viewing — exactly what the browser extension does</span></h2>
+    </div>
+    <p class="browse-desc">
+      The extension works by <strong>injecting its script into the page you're viewing</strong> — the browser lets it
+      run inside any website. The web app uses the <strong>same method</strong>, just user-triggered: drag this link to
+      your bookmarks bar <strong>once</strong>, then on any site (Weibo, ifeng, news… — even ones the in-app reader
+      can't reach) click it and the <strong>same floating 王软音 panel as the extension</strong> appears on that real page.
+    </p>
+    <div class="bookmark-apply">
+      <div class="browse-row bookmark-row">
+        <a id="bookmarkletLink" class="bookmarklet-link" draggable="true" href="#">王软音 · Wangruanyin</a>
+        <button type="button" id="copyBookmarkletBtn" class="clear-btn">Copy bookmarklet</button>
+      </div>
+      <textarea id="bookmarkletCode" class="bookmarklet-code" readonly spellcheck="false"></textarea>
+      <p class="hint">Your header toggles are baked into this link — change them here and it updates.
+        One click on any page = the extension's content script, no install needed.</p>
+    </div>
+  </section>
+
   <div id="siteHost" class="site-host" hidden>
     <div id="realNotice" class="real-view-bar" hidden>
       <span id="realNoticeText">🌐 <strong>Real site</strong> — the actual website, so images and links work
