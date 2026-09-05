@@ -318,6 +318,29 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .site-host[hidden] { display: none; }
 body.viewing .site-host { padding: 0 6px 6px; }
+/* Slim bar shown when the viewer falls back to the REAL page (native images/JS). */
+.real-view-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #244d7d;
+  background: #eaf2fc;
+  border: 1px solid #c4d7ec;
+  border-radius: 7px;
+}
+.real-view-bar a {
+  color: #1f5fa6;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.real-view-bar a:hover { text-decoration: underline; }
 /* Slim, non-blocking progress bar shown while a page is fetching. */
 .load-bar {
   flex: 0 0 auto;

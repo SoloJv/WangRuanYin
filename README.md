@@ -56,12 +56,16 @@ translation stay in one place, like the extension's popup on a real browser tab.
 3. The page appears in the viewer and is annotated automatically (pinyin first, translations fill in).
    **Clicking links** keeps you in the viewer — the address bar shows where you are and each new page is
    annotated. The **⚙ tools** panel collapses so the site takes all the space; changing any toggle
-   re-annotates the page instantly. If a clicked page can't be fetched (reader blocked), the app falls
-   back to loading it directly in the frame so surfing never stops.
+   re-annotates the page instantly.
+4. **If a site can't be fetched** (news SPAs, JS shells, login walls, blocked readers): the viewer
+   **automatically loads the real page directly** — images, scripts and links then run natively, like a
+   browser tab, with a slim notice bar and an **✨ 王软音 view** button to switch back to the annotated view
+   when possible. **Sites that refuse to be framed at all** (e.g. Weibo sends `X-Frame-Options`) show a
+   clear message and an **↗ Open the real site** button, which works everywhere including mobile.
 
-> Sites that require login or send `X-Frame-Options: DENY` (e.g. Weibo) can't be shown inside another
-> page — the viewer shows a clear message and an **↗ Open the real site** button; open it there and use
-> the browser **extension** to annotate it.
+> Mobile: the app is served normally on phones (it's a plain GitHub Pages website). These rendering
+> fixes are not mobile-specific — the auto real-page fallback makes JS-heavy news sites work on both
+> desktop and mobile.
 
 > The web app cannot run scripts inside another website's tab automatically (same-origin policy). For
 > sites where even the reader/proxy approach fails, the **extension** is the always-native option.

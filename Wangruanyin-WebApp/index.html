@@ -20,6 +20,7 @@
       <input id="siteUrl" type="text" spellcheck="false" placeholder="https://zh.wikipedia.org — open a website here">
       <button type="button" id="openSiteBtn" class="btn-open">Open website</button>
       <button type="button" id="toolsToggle" class="clear-btn header-btn" aria-expanded="true" title="Show or hide the annotation tools">⚙ Hide tools ▴</button>
+      <button type="button" id="realViewBtn" class="clear-btn header-btn" hidden title="Show the real page directly (native images/scripts) or switch back to the annotated view">↖ Real page</button>
     </div>
     <p id="browseStatus" class="browse-status" hidden></p>
   </header>
@@ -114,6 +115,11 @@
   </div>
 
   <div id="siteHost" class="site-host" hidden>
+    <div id="realNotice" class="real-view-bar" hidden>
+      <span>🌐 <strong>Real page view</strong> — this is the actual website, so images and links work natively.
+      王软音 annotations are paused here (the reader couldn't fetch this site).</span>
+      <a id="realOpenTab" href="#" target="_blank" rel="noopener">⤢ Open in a new tab</a>
+    </div>
     <div id="loadBar" class="load-bar" hidden></div>
     <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock"
             title="Website opened in this page with 王软音 annotations"></iframe>

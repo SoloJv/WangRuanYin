@@ -26,6 +26,12 @@
   const errUrl = $('errUrl');
   const errHint = $('errHint');
   const openRealSiteBtn = $('openRealSiteBtn');
+  const realViewBtn = $('realViewBtn');
+  const realNotice = $('realNotice');
+  const realOpenTab = $('realOpenTab');
+
+  // 'annotated' = fetched + 王软音 injected; 'real' = real page loaded directly.
+  let viewMode = 'annotated';
 
   // Cached copy of the most recent site so re-opening is instant.
   const CACHE_KEY = 'wry_viewer_cache_v1';
@@ -125,9 +131,12 @@ function setStatus(msg) {
   }
   function exitViewer() {
     viewerActive = false;
+    viewMode = 'annotated';
     document.body.classList.remove('viewing');
     if (siteHost) siteHost.hidden = true;
     if (viewerCloseBtn) viewerCloseBtn.hidden = true;
+    if (realViewBtn) realViewBtn.hidden = true;
+    if (realNotice) realNotice.hidden = true;
     if (frame) { frame.src = ''; frame.onload = null; }
     if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
     lastBlobUrl = null;
@@ -439,6 +448,7 @@ function setStatus(msg) {
   }
 
   function showResult(res, url) {
+    setViewMode('annotated');
     const settings = collectSettings();
     const bases = candidateBases();
     const doc = res.kind === 'md'
@@ -477,24 +487,30 @@ function setStatus(msg) {
     }
 fetchPage(url, (htmlRes) => {
       if (token !== renderToken) return;
+      if (htmlRes.kind === 'html' && looksLikeEmptyShell(htmlRes.html) && !framingBlocked(url)) {
+        // Real JS-shell: prefer the actual page so images/links work natively.
+        showRealPage(url);
+        return;
+      }
       writeCache(url, htmlRes);
       showResult(htmlRes, url);
     })
       .then((res) => {
         if (token !== renderToken) return;
+        if (res.kind === 'html' && looksLikeEmptyShell(res.html) && !framingBlocked(url)) {
+          showRealPage(url);
+          return;
+        }
         writeCache(url, res);
         showResult(res, url);
       })
       .catch((err) => {
         if (token !== renderToken) return;
-        // Surf must never stop: navigate the SAME iframe directly to the clicked
-        // URL (works for any site that allows framing, e.g. Wikipedia).
+        // Surf must never stop and pages must always load: fall back to the REAL
+        // site directly in the same iframe (native images/scripts). Weibo is the
+        // known exception (X-Frame-Options) → error card + open-real-site.
         if (viewerActive && frame && !framingBlocked(url)) {
-          if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
-          lastBlobUrl = null;
-          frame.src = url;
-          endLoading();
-          setStatus('Opened ' + url + ' directly — 王软音 annotations paused on this page.');
+          showRealPage(url);
           return;
         }
         showError(url);
@@ -505,6 +521,62 @@ fetchPage(url, (htmlRes) => {
   // Sites that refuse to be framed can't be shown directly — keep the error card.
   function framingBlocked(url) {
     return /weibo\.com/i.test(url);
+  }
+
+  // A fetched "page" that is really a client-side JS shell (a login wall or an
+  // app that renders everything in JS) has almost no server-rendered text — show
+  // the real page directly instead of a blank shell.
+  function looksLikeEmptyShell(html) {
+    if (!html || typeof html !== 'string') return true;
+    const textOnly = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return textOnly.length < 180;
+  }
+
+  // Switches the viewer between "annotated" (王软音 applied) and "real page"
+  // (the actual site loaded directly — native images/scripts; no annotations).
+  function setViewMode(mode) {
+    viewMode = mode;
+    if (realNotice) realNotice.hidden = mode !== 'real';
+    if (realViewBtn) {
+      realViewBtn.hidden = false;
+      realViewBtn.textContent = mode === 'real' ? '✨ 王软音 view' : '↖ Real page';
+      realViewBtn.title = mode === 'real'
+        ? 'Show the page with 王软音 annotations (reader must be able to fetch it)'
+        : 'Show the real page directly (native images/scripts; annotations paused)';
+    }
+  }
+
+  // Load the REAL site directly into the same iframe — the reliable, native path
+  // for news/apps whose pages can't be fetched (JS shells, login walls, proxies
+  // blocked). Images, links and scripts all work, exactly like a browser tab.
+  function showRealPage(url) {
+    setViewMode('real');
+    if (realOpenTab) realOpenTab.href = url;
+    if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
+    lastBlobUrl = null;
+    errorBox.hidden = true;
+    if (siteHost) siteHost.classList.remove('has-error');
+    frame.hidden = false;
+    frame.onload = () => {
+      setStatus('Real page — pictures and links are native. For 王软音 on unfetchable sites use the browser extension.');
+    };
+    frame.src = url;
+    endLoading();
+  }
+
+  function toggleView() {
+    const current = (siteUrl && siteUrl.value) || '';
+    if (!current) return;
+    if (viewMode === 'real') {
+      loadSite(current); // try the annotated fetch (may fall back to real again)
+    } else {
+      showRealPage(current);
+    }
   }
 
   // --- events ------------------------------------------------------------------
@@ -524,6 +596,7 @@ fetchPage(url, (htmlRes) => {
   }
   if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsCollapsed(!toolsCollapsed()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
+  if (realViewBtn) realViewBtn.addEventListener('click', toggleView);
   if (openRealSiteBtn) openRealSiteBtn.addEventListener('click', () => {
     const u = (errUrl && errUrl.textContent) || siteUrl.value;
     if (u) window.open(u, '_blank', 'noopener');
