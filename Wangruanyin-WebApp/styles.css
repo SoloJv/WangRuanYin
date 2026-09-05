@@ -373,27 +373,3 @@ body.viewing .site-host { padding: 0 6px 6px; }
   background: #fff;
 }
 body.viewing #siteFrame { border-radius: 0; border: none; }
-.site-host .site-error {
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 20px 22px;
-  color: #444;
-  border: 1px solid #f0c8c8;
-  background: #fdf3f3;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.6;
-  overflow: auto;
-}
-.site-host.has-error .site-error {
-  flex: 0 1 auto;
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(520px, 94%);
-  z-index: 5;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-}
-.site-host .site-error h3 { color: #a33; margin: 0 0 8px; }
-.site-host .site-error code { background: #f6e6e6; border-radius: 4px; padding: 1px 5px; }

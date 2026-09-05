@@ -22,13 +22,9 @@
   const siteHost = $('siteHost');
   const loadBar = $('loadBar');
   const frame = $('siteFrame');
-  const errorBox = $('siteError');
-  const errUrl = $('errUrl');
-  const errHint = $('errHint');
-  const openRealSiteBtn = $('openRealSiteBtn');
   const realViewBtn = $('realViewBtn');
   const realNotice = $('realNotice');
-  const realOpenTab = $('realOpenTab');
+  const realNoticeText = $('realNoticeText');
 
   // 'annotated' = fetched + 王软音 injected; 'real' = real page loaded directly.
   let viewMode = 'annotated';
@@ -140,8 +136,6 @@ function setStatus(msg) {
     if (frame) { frame.src = ''; frame.onload = null; }
     if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
     lastBlobUrl = null;
-    if (siteHost) siteHost.classList.remove('has-error');
-    errorBox.hidden = true;
   }
 
   // --- session cache ---------------------------------------------------------
@@ -413,41 +407,11 @@ function setStatus(msg) {
   }
 
   function clearError() {
-    errorBox.hidden = true;
     frame.hidden = false;
-    if (openRealSiteBtn) openRealSiteBtn.hidden = true;
-    if (siteHost) siteHost.classList.remove('has-error');
   }
 
-  function showError(url) {
-    endLoading();
-    const hint = errHintText(url);
-    if (errHint) errHint.textContent = hint;
-    // Keep the previous page visible; show the error as an overlay card.
-    if (lastBlobUrl && frame.src) {
-      if (siteHost) siteHost.classList.add('has-error');
-      errorBox.hidden = false;
-      if (openRealSiteBtn) openRealSiteBtn.hidden = false;
-      if (errUrl) errUrl.textContent = url;
-      setStatus('Could not load ' + url);
-      return;
-    }
-    frame.hidden = true;
-    if (errUrl) errUrl.textContent = url;
-    errorBox.hidden = false;
-    if (openRealSiteBtn) openRealSiteBtn.hidden = false;
-  }
-
-  function errHintText(url) {
-    if (/weibo\.com/i.test(url)) {
-      return 'Weibo shows only a "Sina Visitor System" login wall to readers — it requires you to be\n' +
-        'signed in, so its content can\'t be shown inside the web app.';
-    }
-    return 'Causes are usually login-required pages, sites that block readers/proxies, or apps\n' +
-      'that render only with client-side JavaScript.';
-  }
-
-  function showResult(res, url) {
+  function showResult(res, url, token) {
+    if (typeof token === 'number' && token !== renderToken) return;
     setViewMode('annotated');
     const settings = collectSettings();
     const bases = candidateBases();
@@ -476,51 +440,63 @@ function setStatus(msg) {
     clearError();
     enterViewer();
     startLoading();
-    setStatus('Fetching…');
+    setStatus('Loading ' + url + '…');
+
+    // ALWAYS open the REAL site first and stay inside the app: real images,
+    // links and scripts work natively and surfing never leaves this page.
+    showRealPage(url);
+
+    // Then add 王软音 on top when possible: fetch through the reader pipeline and,
+    // if it succeeds, swap to the annotated view automatically.
+    if (annotationEnabled()) fetchAndAnnotate(url, token);
+  }
+
+  // True if any annotation feature the user cares about is on.
+  function annotationEnabled() {
+    const pinyin = $('togglePinyin') && $('togglePinyin').checked;
+    const translation = $('toggleTranslation') && $('toggleTranslation').checked;
+    const hsk = document.querySelector('input[name="hskMode"]:checked');
+    return pinyin !== false || translation !== false || (hsk && hsk.value !== 'off');
+  }
+
+  // Fetch the current page for the annotated view. On failure the real page
+  // simply stays — never an error card, never a new tab.
+  function fetchAndAnnotate(url, token) {
+    startLoading();
+    setStatus('Applying 王软音…');
 
     const cached = readCache(url);
     if (cached) {
       const c = { kind: cached.kind, label: cached.label || 'cached copy', source: cached.source || 'cache', html: cached.html, text: cached.text };
       setStatus('Loaded a cached copy — applying 王软音…');
-      showResult(c, url);
+      showResult(c, url, token);
       return;
     }
-fetchPage(url, (htmlRes) => {
+    fetchPage(url, (htmlRes) => {
       if (token !== renderToken) return;
-      if (htmlRes.kind === 'html' && looksLikeEmptyShell(htmlRes.html) && !framingBlocked(url)) {
-        // Real JS-shell: prefer the actual page so images/links work natively.
-        showRealPage(url);
+      if (htmlRes.kind === 'html' && looksLikeEmptyShell(htmlRes.html)) {
+        endLoading();
+        setStatus('王软音 isn\'t available on this site (login/JS app) — you\'re viewing the real page.');
         return;
       }
       writeCache(url, htmlRes);
-      showResult(htmlRes, url);
+      showResult(htmlRes, url, token);
     })
       .then((res) => {
         if (token !== renderToken) return;
-        if (res.kind === 'html' && looksLikeEmptyShell(res.html) && !framingBlocked(url)) {
-          showRealPage(url);
+        if (res.kind === 'html' && looksLikeEmptyShell(res.html)) {
+          endLoading();
+          setStatus('王软音 isn\'t available on this site (login/JS app) — you\'re viewing the real page.');
           return;
         }
         writeCache(url, res);
-        showResult(res, url);
+        showResult(res, url, token);
       })
-      .catch((err) => {
+      .catch(() => {
         if (token !== renderToken) return;
-        // Surf must never stop and pages must always load: fall back to the REAL
-        // site directly in the same iframe (native images/scripts). Weibo is the
-        // known exception (X-Frame-Options) → error card + open-real-site.
-        if (viewerActive && frame && !framingBlocked(url)) {
-          showRealPage(url);
-          return;
-        }
-        showError(url);
-        console.warn('Wangruanyin viewer:', err);
+        endLoading();
+        setStatus('王软音 isn\'t available on this site — you\'re viewing the real page.');
       });
-  }
-
-  // Sites that refuse to be framed can't be shown directly — keep the error card.
-  function framingBlocked(url) {
-    return /weibo\.com/i.test(url);
   }
 
   // A fetched "page" that is really a client-side JS shell (a login wall or an
@@ -551,20 +527,17 @@ fetchPage(url, (htmlRes) => {
     }
   }
 
-  // Load the REAL site directly into the same iframe — the reliable, native path
-  // for news/apps whose pages can't be fetched (JS shells, login walls, proxies
-  // blocked). Images, links and scripts all work, exactly like a browser tab.
+  // Load the REAL site directly into the same iframe — the default experience:
+  // native images, links and scripts; the 王软音 toggles then annotate on top.
   function showRealPage(url) {
     setViewMode('real');
-    if (realOpenTab) realOpenTab.href = url;
+    if (realNoticeText) realNoticeText.textContent =
+      '🌐 Real site — the actual website, so images and links work natively. ' +
+      '王软音 annotates it automatically when the reader can reach it; otherwise you keep surfing the real page.';
     if (lastBlobUrl) { try { URL.revokeObjectURL(lastBlobUrl); } catch (e) {} }
     lastBlobUrl = null;
-    errorBox.hidden = true;
-    if (siteHost) siteHost.classList.remove('has-error');
     frame.hidden = false;
-    frame.onload = () => {
-      setStatus('Real page — pictures and links are native. For 王软音 on unfetchable sites use the browser extension.');
-    };
+    frame.onload = () => setStatus('Real site loaded — 王软音 enhances it when possible.');
     frame.src = url;
     endLoading();
   }
@@ -573,7 +546,8 @@ fetchPage(url, (htmlRes) => {
     const current = (siteUrl && siteUrl.value) || '';
     if (!current) return;
     if (viewMode === 'real') {
-      loadSite(current); // try the annotated fetch (may fall back to real again)
+      const token = ++renderToken;
+      fetchAndAnnotate(current, token); // try the annotated view
     } else {
       showRealPage(current);
     }
@@ -597,14 +571,19 @@ fetchPage(url, (htmlRes) => {
   if (toolsToggle) toolsToggle.addEventListener('click', () => setToolsCollapsed(!toolsCollapsed()));
   if (viewerCloseBtn) viewerCloseBtn.addEventListener('click', exitViewer);
   if (realViewBtn) realViewBtn.addEventListener('click', toggleView);
-  if (openRealSiteBtn) openRealSiteBtn.addEventListener('click', () => {
-    const u = (errUrl && errUrl.textContent) || siteUrl.value;
-    if (u) window.open(u, '_blank', 'noopener');
-  });
-  if (openRealSiteBtn) openRealSiteBtn.hidden = true;
 
-  // Live re-annotation from the header toggles (the extension-popup equivalent).
+  // Live re-annotation from the header toggles: in the annotated view they
+  // re-annotate instantly; in the REAL view they request the annotated version
+  // of the current page (so toggling ON always tries to enhance the real page).
   function pushSettings() {
+    const current = (siteUrl && siteUrl.value) || '';
+    if (viewMode === 'real') {
+      if (annotationEnabled() && current) {
+        const token = ++renderToken;
+        fetchAndAnnotate(current, token);
+      }
+      return;
+    }
     if (!frame || !frame.contentWindow) return;
     try { frame.contentWindow.postMessage({ t: 'wrySettings', s: collectSettings() }, '*'); } catch (e) {}
   }

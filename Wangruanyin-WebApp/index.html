@@ -116,22 +116,12 @@
 
   <div id="siteHost" class="site-host" hidden>
     <div id="realNotice" class="real-view-bar" hidden>
-      <span>🌐 <strong>Real page view</strong> — this is the actual website, so images and links work natively.
-      王软音 annotations are paused here (the reader couldn't fetch this site).</span>
-      <a id="realOpenTab" href="#" target="_blank" rel="noopener">⤢ Open in a new tab</a>
+      <span id="realNoticeText">🌐 <strong>Real site</strong> — the actual website, so images and links work
+      natively. 王软音 can annotate it when the reader can reach it.</span>
     </div>
     <div id="loadBar" class="load-bar" hidden></div>
-    <iframe id="siteFrame" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock"
+    <iframe id="siteFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-pointer-lock"
             title="Website opened in this page with 王软音 annotations"></iframe>
-    <div id="siteError" class="site-error" hidden>
-      <h3>Could not load this website</h3>
-      <p>王软音 tried several mirrors (Jina Reader, the Wikimedia CORS API and public CORS
-      proxies) to fetch <code id="errUrl"></code>, but none returned a usable copy.<br>
-      <span id="errHint">Causes are usually login-required pages, sites that block readers/proxies, or apps
-      that render only with client-side JavaScript.</span></p>
-      <p><button type="button" id="openRealSiteBtn" class="btn-open">↗ Open the real site in a new tab</button></p>
-      <p>Try a server-rendered address — Wikipedia, news and blogs work well.</p>
-    </div>
   </div>
 
   <main id="pasteWorkspace" class="workspace">

@@ -44,28 +44,26 @@ The **`Wangruanyin-WebApp`** folder is a self-contained single-page app. No inst
 
 ### Use Wangruanyin on any website (in-app website viewer)
 
-The web app **is** the browsing environment: type a website and press **Open website**, and the page
-loads in a viewer right inside the app, below the same toggles you use for pasted text. 王软音 runs on
-that page too — pinyin, sentence translations and HSK colours are applied there, and the header toggles
-re-annotate it live. Resource URLs are fixed so images and stylesheets render, and clicking a link
-navigates the **same viewer** (the address box updates, the next page is annotated too) — surfing and
-translation stay in one place, like the extension's popup on a real browser tab.
+The web app **is** the browsing environment: type a website and press **Open website**, and the **real
+site always loads first** inside the app — native images, links and scripts, exactly like a browser tab.
+Nothing ever opens in a separate tab. Then 王软音's toggles enhance that page: pinyin, sentence
+translations and HSK colours are applied automatically when the page can be fetched through the reader;
+for sites that can't be fetched (login walls, JS-only news apps like Weibo/ifeng), you simply keep
+surfing the real page and a small note explains annotations aren't available there. Clicking links
+inside the site keeps you in the app (no new tabs).
 
 1. **Open the app** at `https://solojv.github.io/WangRuanYin/` (or serve it locally: `python -m http.server 8000` in the `Wangruanyin-WebApp` folder, then open `http://localhost:8000/`).
 2. Type a website (e.g. `https://zh.wikipedia.org`) in the top box and click **Open website**.
-3. The page appears in the viewer and is annotated automatically (pinyin first, translations fill in).
-   **Clicking links** keeps you in the viewer — the address bar shows where you are and each new page is
-   annotated. The **⚙ tools** panel collapses so the site takes all the space; changing any toggle
-   re-annotates the page instantly.
-4. **If a site can't be fetched** (news SPAs, JS shells, login walls, blocked readers): the viewer
-   **automatically loads the real page directly** — images, scripts and links then run natively, like a
-   browser tab, with a slim notice bar and an **✨ 王软音 view** button to switch back to the annotated view
-   when possible. **Sites that refuse to be framed at all** (e.g. Weibo sends `X-Frame-Options`) show a
-   clear message and an **↗ Open the real site** button, which works everywhere including mobile.
+3. The **real site opens in the viewer** and 王软音 annotates it automatically when the reader can reach
+   it (pinyin first, translations fill in). The **⚙ tools** panel collapses so the site takes all the
+   space; changing any toggle re-annotates instantly. Clicking links navigates the same viewer and each
+   new page is enhanced the same way.
 
-> Mobile: the app is served normally on phones (it's a plain GitHub Pages website). These rendering
-> fixes are not mobile-specific — the auto real-page fallback makes JS-heavy news sites work on both
-> desktop and mobile.
+> **Why "real first"?** The web app may not run scripts inside another site's tab (same-origin policy),
+> so it loads the actual page (native) and then applies 王软音 on top by re-fetching through a reader
+> when possible. If a page can't be read that way (login walls, JS-only apps), you get the genuine site
+> without enhancements rather than an error — that's the same limitation the browser **extension**
+> solves natively.
 
 > The web app cannot run scripts inside another website's tab automatically (same-origin policy). For
 > sites where even the reader/proxy approach fails, the **extension** is the always-native option.
@@ -179,8 +177,8 @@ Operation is the same across Chrome and Edge (Firefox and Safari behave identica
 - **Translations not showing?** Translation uses the free Google Translate endpoint (`translate.googleapis.com`) — it needs an internet connection. Check your connection and that nothing is blocking the host.
 - **Read-aloud silent?** A Chinese browser voice must be installed (most desktop browsers include one). The web app uses only the browser voice; the extensions first try a local Coqui TTS server (`http://localhost:5002`) and fall back to the browser voice.
 - **GitHub Pages URL shows “There isn't a GitHub Pages site here” / 404?** That message means the **Pages feature was not enabled** for the repo. It is now enabled and the app is live at **`https://solojv.github.io/WangRuanYin/`** — the deploy workflow also auto-enables Pages as a safety net, so a fresh clone/rebuild will self-heal.
-- **Website viewer: a site's images aren't rendering?** Protocol-relative URLs (`//host/…`) are rewritten to `https://…` and a `<base href>` is injected, so images, stylesheets and links from the real site load correctly. If a specific site still mis-renders (heavy JS, lazy-loading), click **↗ Open the real site** and use the browser **extension** there.
-- **Website viewer: why fetch instead of opening the real page?** To let the web app's toggles annotate the page, the site is fetched and rendered inside the app (the same-origin policy stops a plain web page from controlling another site's tab). Browsing stays in the app: clicking links loads the next page in the same viewer with 王软音 re-applied.
+- **Website viewer: how does it decide between the real page and annotations?** The **real site always opens first** (native images/links/scripts, never a new tab). 王软音 then re-fetches that page through the reader to add pinyin/translations automatically when possible. If a page can't be read (login walls, JS-only news apps), you keep the genuine real page with a small note — no error screen.
+- **Website viewer: a site's links open new tabs?** Links stay inside the viewer; the iframe sandbox blocks new windows, so surfing never leaves the app. (If a site itself forces `target="_blank"`, those are suppressed too.)
 
 ---
 
