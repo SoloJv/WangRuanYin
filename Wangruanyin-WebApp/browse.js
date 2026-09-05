@@ -28,6 +28,10 @@
   const bmLink = $('bookmarkletLink');
   const bmCode = $('bookmarkletCode');
   const copyBtn = $('copyBookmarkletBtn');
+  const recentSitesEl = $('recentSites');
+
+  const RECENTS_KEY = 'wry_viewer_recents_v1';
+  const RECENTS_MAX = 6;
 
   // 'annotated' = fetched + 王软音 injected; 'real' = real page loaded directly.
   let viewMode = 'annotated';
@@ -156,6 +160,48 @@
     if (!u) return '';
     if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
     return u;
+  }
+
+  // --- recent sites (mobile-friendly quick access, no bookmark needed) --------
+  function loadRecents() {
+    try {
+      const raw = localStorage.getItem(RECENTS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter((u) => typeof u === 'string' && u) : [];
+    } catch (e) { return []; }
+  }
+  function saveRecents(list) {
+    try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, RECENTS_MAX))); } catch (e) { /* ignore */ }
+  }
+  function recordRecent(url) {
+    const list = loadRecents();
+    const l = list.filter((u) => u !== url);
+    l.unshift(url);
+    saveRecents(l);
+    renderRecents();
+  }
+  function renderRecents() {
+    if (!recentSitesEl) return;
+    const list = loadRecents();
+    if (!list.length) { recentSitesEl.hidden = true; recentSitesEl.innerHTML = ''; return; }
+    recentSitesEl.hidden = false;
+    recentSitesEl.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'recent-label';
+    label.textContent = 'Recent:';
+    recentSitesEl.appendChild(label);
+    list.forEach((u) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'recent-chip';
+      b.textContent = u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      b.title = u;
+      b.addEventListener('click', () => {
+        if (siteUrl) siteUrl.value = u;
+        loadSite(u);
+      });
+      recentSitesEl.appendChild(b);
+    });
   }
 
 function setStatus(msg) {
@@ -473,6 +519,7 @@ function setStatus(msg) {
   function showResult(res, url, token) {
     if (typeof token === 'number' && token !== renderToken) return;
     setViewMode('annotated');
+    recordRecent(url);
     const settings = collectSettings();
     const bases = candidateBases();
     const doc = res.kind === 'md'
@@ -591,6 +638,7 @@ function setStatus(msg) {
   // native images, links and scripts; the 王软音 toggles then annotate on top.
   function showRealPage(url) {
     setViewMode('real');
+    recordRecent(url);
     if (realNoticeText) realNoticeText.textContent =
       '🌐 Real site — the actual website, so images and links work natively. ' +
       '王软音 annotates it automatically when the reader can reach it; otherwise you keep surfing the real page.';
@@ -665,6 +713,7 @@ function setStatus(msg) {
   document.querySelectorAll('#hskLegend .hsk-color').forEach((sw) => sw.addEventListener('click', refreshBm));
 
   refreshBookmarklet();
+  renderRecents();
 
   // In-page links navigate the SAME iframe (surf + translate stay together).
   window.addEventListener('message', (ev) => {

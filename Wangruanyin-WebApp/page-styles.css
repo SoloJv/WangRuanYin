@@ -300,3 +300,23 @@
 }
 .wry-switch input:checked + .wry-slider { background-color: #4CAF50; }
 .wry-switch input:checked + .wry-slider:before { transform: translateX(16px); }
+.wry-switch input:checked + .wry-slider:before { transform: translateX(16px); }
+
+/* Floating re-open button (shown after the panel is closed) */
+.wry-reopen-btn{
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2147483646;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  color: #fff;
+  background: #4CAF50;
+  border: 1px solid #3d9142;
+  border-radius: 20px;
+  padding: 8px 15px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,.3);
+}
+.wry-reopen-btn:hover { background: #3d9142; }

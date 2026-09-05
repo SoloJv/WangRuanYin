@@ -684,7 +684,7 @@
       });
     }
 
-    panel.querySelector('.wry-panel-close').addEventListener('click', cleanup);
+    panel.querySelector('.wry-panel-close').addEventListener('click', hidePanel);
   }
 
   // --- init / cleanup / public API ---------------------------------------------
@@ -714,6 +714,7 @@
     document.removeEventListener('mouseup', onSelectionMouseUp);
     document.removeEventListener('selectionchange', onSelectionChange);
     if (panel) { panel.remove(); panel = null; }
+    removeReopenButton();
   }
 
   let bootStarted = false;
@@ -730,6 +731,8 @@
     // The inline bootstrap AND the host both post wryBoot — make init idempotent
     // so the page is never annotated / translated twice.
     if (bootStarted) {
+      // If the panel was closed, re-opening the bookmark must bring it back.
+      if (!panelSuppressed) showPanel();
       if (!isPageProcessed && isEnabled) processPage();
       return;
     }
@@ -747,6 +750,37 @@
     if (hskHighlight && hskMode !== 'off') applyStandaloneHsk();
     if (isEnabled) processPage();
     if (!panelSuppressed) setStatus('王软音 ready — use the toggles above.');
+  }
+
+  // Shows the floating panel (rebuilding it if it was closed), so the toggles
+  // are always one click away. Also exposed as WryPageRunner.showPanel.
+  function showPanel() {
+    if (panelSuppressed) return;
+    removeReopenButton();
+    if (panel) { syncPanel(); return; }
+    buildPanel();
+    wirePanel();
+    syncPanel();
+  }
+
+  function hidePanel() {
+    if (panel) { panel.remove(); panel = null; }
+    showReopenButton();
+  }
+
+  let reopenBtn = null;
+  function showReopenButton() {
+    if (reopenBtn || panel) return;
+    reopenBtn = document.createElement('button');
+    reopenBtn.id = 'wry-reopen';
+    reopenBtn.className = 'wry-reopen-btn';
+    reopenBtn.textContent = '王软音';
+    reopenBtn.title = 'Re-open the 王软音 panel';
+    reopenBtn.addEventListener('click', showPanel);
+    (document.body || document.documentElement).appendChild(reopenBtn);
+  }
+  function removeReopenButton() {
+    if (reopenBtn) { reopenBtn.remove(); reopenBtn = null; }
   }
 
   // Live re-annotation driven by the host page's header toggles (the website
@@ -770,7 +804,7 @@
     if (!panelSuppressed) setStatus('王软音 settings updated.');
   }
 
-  window.WryPageRunner = { init, cleanup, applySettings, setSettings };
+  window.WryPageRunner = { init, cleanup, applySettings, setSettings, showPanel, hidePanel };
 
   // Safety boot: the hosting page (parent) may postMessage us after load to
   // re-apply settings if our inline bootstrap somehow lost the race, and to

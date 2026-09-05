@@ -59,6 +59,10 @@ inside the site keeps you in the app (no new tabs).
    space; changing any toggle re-annotates instantly. Clicking links navigates the same viewer and each
    new page is enhanced the same way.
 
+**No bookmark needed on mobile (or anywhere):** the viewer is the mobile path — just type the address in
+the top box and tap **Open website**; everything stays inside the app. Sites you open appear as
+**Recent** chips under the address bar (saved on the device), so revisiting is one tap.
+
 ### The extension method (annotate ANY real page, like the browser extension)
 
 The Chrome/Edge/Firefox extension works by having the **browser inject its script into the page you're
@@ -69,14 +73,16 @@ can't reach) click it and the **same floating 王软音 panel as the extension**
 pinyin, sentence translation, selection popup, HSK, read-aloud. This is the exact content-script
 technique, no install required — one click per page.
 
+- **The toggles never get lost:** closing the floating panel leaves a small **王软音** button pinned at the
+  bottom-right of the page; click it (or click the bookmark again) to bring the panel straight back with
+  all your settings — no need to start from scratch.
+
 > Why can't the web app do it automatically? A website's page is sandboxed by the same-origin policy and
 > may not inject scripts into another site's tab — that privilege is granted by the browser only to an
 > **installed extension** (via `manifest.json` content_scripts). The web app therefore uses the closest
 > legal equivalent: automatic when the in-app reader can fetch the page, otherwise the bookmarklet for
-> the real page, otherwise the genuine site without annotations.
-
-> The web app cannot run scripts inside another website's tab automatically (same-origin policy). For
-> sites where even the reader/proxy approach fails, the **extension** is the always-native option.
+> the real page, otherwise the genuine site without annotations. (On mobile there's no easy bookmarklet,
+> which is why the in-app viewer above is the recommended mobile path.)
 
 ### Hosting on GitHub Pages
 
