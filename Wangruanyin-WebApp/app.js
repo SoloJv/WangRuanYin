@@ -263,10 +263,15 @@
     document.body.appendChild(popup);
 
     const rect = popup.getBoundingClientRect();
-    let left = Math.max(8, position.x - rect.width / 2);
+    const MARGIN = 12; // viewport edge gap so clicking outside always works
+    let left = Math.max(MARGIN, position.x - rect.width / 2);
+    if (left + rect.width > window.innerWidth - MARGIN) left = window.innerWidth - rect.width - MARGIN;
+    // Try below selection first; if no room, try above; if still no room, clamp to edge
     let top = position.y;
-    if (left + rect.width > window.innerWidth - 8) left = window.innerWidth - rect.width - 8;
-    if (top + rect.height > window.innerHeight - 8) top = Math.max(8, position.y - rect.height - 24);
+    if (top + rect.height > window.innerHeight - MARGIN) {
+      top = position.y - rect.height - 24;
+      if (top < MARGIN) top = MARGIN;
+    }
     popup.style.left = left + 'px';
     popup.style.top = top + 'px';
 

@@ -258,6 +258,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 #wry-translation-popup {
   position: fixed; z-index: 2147483647;
   min-width: 220px; max-width: 440px;
+  max-height: 75vh;
+  overflow-y: auto;
   background: #ffffff; border: 1px solid #cccccc; border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   padding: 14px 16px; font-family: Arial, sans-serif;
